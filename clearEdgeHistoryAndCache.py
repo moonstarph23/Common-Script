@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 import time
+import winreg
 import psutil
 
 def close_edge_processes():
@@ -26,6 +27,20 @@ def close_edge_processes():
         print("No Edge processes were running")
     
     return closed_count > 0
+
+def hide_restore_dialog():
+    """Set Edge policy HideRestoreDialogEnabled=1 (HKCU) to suppress the
+    'Restore pages' dialog that appears after a browser crash."""
+    key_path = r'Software\Policies\Microsoft\Edge'
+    value_name = 'HideRestoreDialogEnabled'
+    try:
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
+            winreg.SetValueEx(key, value_name, 0, winreg.REG_DWORD, 1)
+        print(f"✓ Set Edge policy {value_name}=1 (HKCU) - restore dialog will be hidden")
+        return True
+    except Exception as e:
+        print(f"✗ Failed to set {value_name}: {e}")
+        return False
 
 def clear_edge_cache_and_history():
     """Clear Microsoft Edge cache and browsing history (including IE mode)"""
@@ -87,9 +102,16 @@ def clear_edge_cache_and_history():
             print(f"✗ Error clearing {name}: {e}")
             failed_count += 1
     
+    # Hide restore pages dialog via Edge policy (HKCU)
+    restore_hidden = hide_restore_dialog()
+    
     # Summary
     print("\n" + "="*60)
     print(f"Summary: {cleared_count} items cleared, {failed_count} failed")
+    if restore_hidden:
+        print("Restore pages dialog: hidden (HideRestoreDialogEnabled=1)")
+    else:
+        print("Restore pages dialog: could not set policy")
     print("="*60)
     
     if failed_count > 0:
