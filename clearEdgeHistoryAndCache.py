@@ -38,10 +38,13 @@ def hide_restore_dialog(user_profile):
     # Layer 1: registry policy (best approach, persistent)
     try:
         key = winreg.HKEY_CURRENT_USER
+        handles = []
         for part in key_path.split('\\'):
             key = winreg.CreateKey(key, part)
+            handles.append(key)
         winreg.SetValueEx(key, value_name, 0, winreg.REG_DWORD, 1)
-        key.Close()
+        for h in handles:
+            h.Close()
         print(f"✓ Set Edge policy {value_name}=1 (HKCU) - restore dialog will be hidden")
         return 'registry'
     except PermissionError:
@@ -53,42 +56,77 @@ def hide_restore_dialog(user_profile):
             )
             print(f"✓ Set Edge policy {value_name}=1 (HKCU) via reg.exe")
             return 'registry'
-        except subprocess.CalledProcessError:
-            pass
-    except Exception:
-        pass
+        except subprocess.CalledProcessError as e:
+            print(f"  Registry policy unavailable: {e.stderr.decode().strip()}")
+    except Exception as e:
+        print(f"  Registry policy unavailable: {e}")
 
     # Layer 2: Preferences JSON patch + delete session files (AppData, always writable)
     if not user_profile:
         return None
-    edge_default = os.path.join(user_profile, r'AppData\Local\Microsoft\Edge\User Data\Default')
-    preferences_path = os.path.join(edge_default, 'Preferences')
-    last_tabs_path = os.path.join(edge_default, 'Last Tabs')
-    last_session_path = os.path.join(edge_default, 'Last Session')
-
-    try:
-        for path, name in [(last_tabs_path, 'Last Tabs'), (last_session_path, 'Last Session')]:
-            if os.path.exists(path):
-                os.remove(path)
-                print(f"✓ Removed {name}")
-            else:
-                print(f"- {name} not found (nothing to clear)")
-
-        if os.path.isfile(preferences_path):
-            with open(preferences_path, 'r', encoding='utf-8') as f:
-                prefs = json.load(f)
-            prefs.setdefault('profile', {})['exit_type'] = 'Normal'
-            prefs['profile']['exited_cleanly'] = True
-            with open(preferences_path, 'w', encoding='utf-8') as f:
-                json.dump(prefs, f, indent=2)
-            print("✓ Patched Preferences: exit_type=Normal, exited_cleanly=True")
-            return 'preferences'
-        else:
-            print("- Preferences file not found (Edge may not have run yet)")
-            return None
-    except Exception as e:
-        print(f"✗ Failed Preferences fallback: {e}")
+    edge_user_data = os.path.join(user_profile, r'AppData\Local\Microsoft\Edge\User Data')
+    if not os.path.isdir(edge_user_data):
+        print("  Edge user data directory not found")
         return None
+
+    # Re-kill Edge: Startup Boost may have respawned background processes during cache clearing
+    close_edge_processes()
+
+    # Find all profile directories (Default, Profile 1, Profile 2, ...)
+    profile_dirs = []
+    for name in os.listdir(edge_user_data):
+        full = os.path.join(edge_user_data, name)
+        if os.path.isdir(full) and (name == 'Default' or name.startswith('Profile ')):
+            profile_dirs.append(full)
+
+    if not profile_dirs:
+        print("  No Edge profiles found")
+        return None
+
+    patched_count = 0
+    for profile_dir in profile_dirs:
+        prefs_path = os.path.join(profile_dir, 'Preferences')
+        last_tabs = os.path.join(profile_dir, 'Last Tabs')
+        last_session = os.path.join(profile_dir, 'Last Session')
+        profile_name = os.path.basename(profile_dir)
+
+        # Remove session files (nothing to restore = no restore dialog)
+        for path, fname in [(last_tabs, 'Last Tabs'), (last_session, 'Last Session')]:
+            try:
+                if os.path.exists(path):
+                    os.remove(path)
+            except Exception as e:
+                print(f"  Could not remove {fname} ({profile_name}): {e}")
+
+        # Patch Preferences with retries (file may be locked briefly after kill)
+        if not os.path.isfile(prefs_path):
+            continue
+
+        patched = False
+        for attempt in range(5):
+            try:
+                with open(prefs_path, 'r', encoding='utf-8') as f:
+                    prefs = json.load(f)
+                prefs.setdefault('profile', {})['exit_type'] = 'Normal'
+                prefs['profile']['exited_cleanly'] = True
+                with open(prefs_path, 'w', encoding='utf-8') as f:
+                    json.dump(prefs, f, indent=2)
+                patched = True
+                break
+            except (PermissionError, OSError):
+                if attempt < 4:
+                    time.sleep(0.5)
+                else:
+                    print(f"  Could not patch Preferences ({profile_name}): file locked")
+
+        if patched:
+            print(f"✓ Patched Preferences [{profile_name}]: exit_type=Normal, exited_cleanly=True")
+            patched_count += 1
+
+    if patched_count > 0:
+        return 'preferences'
+    print("✗ Could not patch any profile's Preferences")
+    return None
 
 def clear_edge_cache_and_history():
     """Clear Microsoft Edge cache and browsing history (including IE mode)"""
