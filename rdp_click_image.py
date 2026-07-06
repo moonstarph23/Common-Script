@@ -168,6 +168,7 @@ def click_images(imagePath1: str, imagePath2: str, timeout: int) -> None:
     
     end_time = time.time() + timeout
     attempt = 1
+    attemptCount = 5
     
     def try_pyautogui_method(image_path, image_name):
         """Try using PyAutoGUI's built-in method with exact color matching on all screens"""
@@ -275,7 +276,7 @@ def click_images(imagePath1: str, imagePath2: str, timeout: int) -> None:
         
         return False
     
-    while time.time() < end_time:
+    while time.time() < end_time and attempt <= attemptCount:
         # Try first image
         print(f"Attempt {attempt}: Looking for first image...")
         if not find_and_click_image(imagePath1, "first image"):
@@ -302,6 +303,8 @@ def click_images(imagePath1: str, imagePath2: str, timeout: int) -> None:
             print(f"Waiting 2 seconds before next attempt... ({remaining_time:.1f}s remaining)")
             time.sleep(2)
     
+    if attempt > attemptCount:
+        print(f"Reached max attempt count ({attemptCount}). Terminating before timeout.")
     print(f"Timeout reached after {timeout} seconds. Finished clicking attempts.")
 
 # imagePath1 = r"R:\Finance\Revenue Audit\HOTEL\City Ledger Report\Processes\runButton.PNG"
