@@ -29,6 +29,46 @@ def close_edge_processes():
     
     return closed_count > 0
 
+def find_edge_user_data_dirs():
+    """Find all Edge user data directories.
+    Checks: UserDataDir policy (HKLM/HKCU, incl. WOW6432Node), then default
+    locations for each Edge channel (stable, Beta, Dev, Canary/SxS)."""
+    local_app_data = os.environ.get('LOCALAPPDATA') or os.path.join(
+        os.environ.get('USERPROFILE', ''), 'AppData', 'Local')
+
+    candidates = []
+    # UserDataDir policy can point Edge at a custom data folder
+    policy_keys = [
+        (winreg.HKEY_LOCAL_MACHINE, r'Software\Policies\Microsoft\Edge'),
+        (winreg.HKEY_LOCAL_MACHINE, r'Software\WOW6432Node\Policies\Microsoft\Edge'),
+        (winreg.HKEY_CURRENT_USER, r'Software\Policies\Microsoft\Edge'),
+    ]
+    for root, path in policy_keys:
+        try:
+            with winreg.OpenKey(root, path) as key:
+                val, _ = winreg.QueryValueEx(key, 'UserDataDir')
+                if val:
+                    candidates.append(os.path.expandvars(val))
+        except (FileNotFoundError, OSError):
+            pass
+
+    # Default per-channel locations
+    candidates.extend([
+        os.path.join(local_app_data, r'Microsoft\Edge\User Data'),
+        os.path.join(local_app_data, r'Microsoft\Edge Beta\User Data'),
+        os.path.join(local_app_data, r'Microsoft\Edge Dev\User Data'),
+        os.path.join(local_app_data, r'Microsoft\Edge SxS\User Data'),
+    ])
+
+    found = []
+    seen = set()
+    for c in candidates:
+        c_norm = os.path.normpath(c)
+        if c_norm not in seen and os.path.isdir(c_norm):
+            found.append(c_norm)
+            seen.add(c_norm)
+    return found
+
 def hide_restore_dialog(user_profile):
     """Suppress the Edge 'Restore pages' dialog after a browser crash.
     Layers: 1) Registry policy (HideRestoreDialogEnabled), 2) Preferences JSON patch + session-file removal."""
@@ -64,64 +104,70 @@ def hide_restore_dialog(user_profile):
     # Layer 2: Preferences JSON patch + delete session files (AppData, always writable)
     if not user_profile:
         return None
-    edge_user_data = os.path.join(user_profile, r'AppData\Local\Microsoft\Edge\User Data')
-    if not os.path.isdir(edge_user_data):
-        print("  Edge user data directory not found")
+
+    # Detect Edge's actual data folder(s) - may be custom (UserDataDir policy)
+    # or a non-stable channel (Beta/Dev/Canary), not just the default location.
+    data_dirs = find_edge_user_data_dirs()
+    if not data_dirs:
+        print("  No Edge user data directory found (custom UserDataDir? check policy)")
         return None
 
     # Re-kill Edge: Startup Boost may have respawned background processes during cache clearing
     close_edge_processes()
 
-    # Find all profile directories (Default, Profile 1, Profile 2, ...)
-    profile_dirs = []
-    for name in os.listdir(edge_user_data):
-        full = os.path.join(edge_user_data, name)
-        if os.path.isdir(full) and (name == 'Default' or name.startswith('Profile ')):
-            profile_dirs.append(full)
-
-    if not profile_dirs:
-        print("  No Edge profiles found")
-        return None
-
     patched_count = 0
-    for profile_dir in profile_dirs:
-        prefs_path = os.path.join(profile_dir, 'Preferences')
-        last_tabs = os.path.join(profile_dir, 'Last Tabs')
-        last_session = os.path.join(profile_dir, 'Last Session')
-        profile_name = os.path.basename(profile_dir)
+    for edge_user_data in data_dirs:
+        channel = os.path.basename(os.path.dirname(edge_user_data))
 
-        # Remove session files (nothing to restore = no restore dialog)
-        for path, fname in [(last_tabs, 'Last Tabs'), (last_session, 'Last Session')]:
-            try:
-                if os.path.exists(path):
-                    os.remove(path)
-            except Exception as e:
-                print(f"  Could not remove {fname} ({profile_name}): {e}")
+        # Find all profile directories (Default, Profile 1, Profile 2, ...)
+        profile_dirs = []
+        for name in os.listdir(edge_user_data):
+            full = os.path.join(edge_user_data, name)
+            if os.path.isdir(full) and (name == 'Default' or name.startswith('Profile ')):
+                profile_dirs.append(full)
 
-        # Patch Preferences with retries (file may be locked briefly after kill)
-        if not os.path.isfile(prefs_path):
+        if not profile_dirs:
+            print(f"  No profiles found in {channel}")
             continue
 
-        patched = False
-        for attempt in range(5):
-            try:
-                with open(prefs_path, 'r', encoding='utf-8') as f:
-                    prefs = json.load(f)
-                prefs.setdefault('profile', {})['exit_type'] = 'Normal'
-                prefs['profile']['exited_cleanly'] = True
-                with open(prefs_path, 'w', encoding='utf-8') as f:
-                    json.dump(prefs, f, indent=2)
-                patched = True
-                break
-            except (PermissionError, OSError):
-                if attempt < 4:
-                    time.sleep(0.5)
-                else:
-                    print(f"  Could not patch Preferences ({profile_name}): file locked")
+        for profile_dir in profile_dirs:
+            prefs_path = os.path.join(profile_dir, 'Preferences')
+            last_tabs = os.path.join(profile_dir, 'Last Tabs')
+            last_session = os.path.join(profile_dir, 'Last Session')
+            profile_name = os.path.basename(profile_dir)
 
-        if patched:
-            print(f"✓ Patched Preferences [{profile_name}]: exit_type=Normal, exited_cleanly=True")
-            patched_count += 1
+            # Remove session files (nothing to restore = no restore dialog)
+            for path, fname in [(last_tabs, 'Last Tabs'), (last_session, 'Last Session')]:
+                try:
+                    if os.path.exists(path):
+                        os.remove(path)
+                except Exception as e:
+                    print(f"  Could not remove {fname} ({channel}/{profile_name}): {e}")
+
+            # Patch Preferences with retries (file may be locked briefly after kill)
+            if not os.path.isfile(prefs_path):
+                continue
+
+            patched = False
+            for attempt in range(5):
+                try:
+                    with open(prefs_path, 'r', encoding='utf-8') as f:
+                        prefs = json.load(f)
+                    prefs.setdefault('profile', {})['exit_type'] = 'Normal'
+                    prefs['profile']['exited_cleanly'] = True
+                    with open(prefs_path, 'w', encoding='utf-8') as f:
+                        json.dump(prefs, f, indent=2)
+                    patched = True
+                    break
+                except (PermissionError, OSError):
+                    if attempt < 4:
+                        time.sleep(0.5)
+                    else:
+                        print(f"  Could not patch Preferences ({channel}/{profile_name}): file locked")
+
+            if patched:
+                print(f"✓ Patched Preferences [{channel}/{profile_name}]")
+                patched_count += 1
 
     if patched_count > 0:
         return 'preferences'
@@ -140,16 +186,36 @@ def clear_edge_cache_and_history():
     if not user_profile:
         print("Error: Could not find user profile directory")
         return False
-    
-    # Edge data paths - ONLY History and Cache
-    edge_data_paths = {
-        'Browsing History': os.path.join(user_profile, r'AppData\Local\Microsoft\Edge\User Data\Default\History'),
-        'History Journal': os.path.join(user_profile, r'AppData\Local\Microsoft\Edge\User Data\Default\History-journal'),
-        'Cache': os.path.join(user_profile, r'AppData\Local\Microsoft\Edge\User Data\Default\Cache'),
-        'Code Cache': os.path.join(user_profile, r'AppData\Local\Microsoft\Edge\User Data\Default\Code Cache'),
-        'GPUCache': os.path.join(user_profile, r'AppData\Local\Microsoft\Edge\User Data\Default\GPUCache'),
-        'Service Worker Cache': os.path.join(user_profile, r'AppData\Local\Microsoft\Edge\User Data\Default\Service Worker\CacheStorage'),
-    }
+
+    # Detect Edge's actual data folder(s) - may be custom (UserDataDir policy)
+    # or a non-stable channel (Beta/Dev/Canary), not just the default location.
+    data_dirs = find_edge_user_data_dirs()
+    if not data_dirs:
+        print("Error: No Edge user data directory found (custom UserDataDir? check policy)")
+        return False
+    print(f"Edge data folder(s) detected: {len(data_dirs)}")
+    for d in data_dirs:
+        print(f"  - {d}")
+
+    # Build Edge data paths - ONLY History and Cache - across ALL detected data dirs and profiles
+    edge_data_paths = {}
+    for edge_user_data in data_dirs:
+        channel = os.path.basename(os.path.dirname(edge_user_data))
+        if not os.path.isdir(edge_user_data):
+            continue
+        for name in os.listdir(edge_user_data):
+            profile_dir = os.path.join(edge_user_data, name)
+            if not os.path.isdir(profile_dir):
+                continue
+            if not (name == 'Default' or name.startswith('Profile ')):
+                continue
+            tag = f"{channel}/{name}"
+            edge_data_paths[f'Browsing History [{tag}]'] = os.path.join(profile_dir, 'History')
+            edge_data_paths[f'History Journal [{tag}]'] = os.path.join(profile_dir, 'History-journal')
+            edge_data_paths[f'Cache [{tag}]'] = os.path.join(profile_dir, 'Cache')
+            edge_data_paths[f'Code Cache [{tag}]'] = os.path.join(profile_dir, 'Code Cache')
+            edge_data_paths[f'GPUCache [{tag}]'] = os.path.join(profile_dir, 'GPUCache')
+            edge_data_paths[f'Service Worker Cache [{tag}]'] = os.path.join(profile_dir, 'Service Worker', 'CacheStorage')
     
     # IE Mode cache paths (Edge uses these for IE mode)
     ie_mode_paths = {
