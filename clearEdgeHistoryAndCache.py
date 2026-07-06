@@ -32,7 +32,9 @@ def close_edge_processes():
 def find_edge_user_data_dirs():
     """Find all Edge user data directories.
     Checks: UserDataDir policy (HKLM/HKCU, incl. WOW6432Node), then default
-    locations for each Edge channel (stable, Beta, Dev, Canary/SxS)."""
+    locations for each Edge channel (stable, Beta, Dev, Canary/SxS), plus
+    UiPath PIP Browser Profiles and any custom dirs registered in the
+    DualEngineCacheContainerTracker key (UiPath/IE-mode integrations)."""
     local_app_data = os.environ.get('LOCALAPPDATA') or os.path.join(
         os.environ.get('USERPROFILE', ''), 'AppData', 'Local')
 
@@ -58,7 +60,41 @@ def find_edge_user_data_dirs():
         os.path.join(local_app_data, r'Microsoft\Edge Beta\User Data'),
         os.path.join(local_app_data, r'Microsoft\Edge Dev\User Data'),
         os.path.join(local_app_data, r'Microsoft\Edge SxS\User Data'),
+        # UiPath PIP Browser Profiles (used by UiPath Edge automations)
+        os.path.join(local_app_data, r'UiPath\PIP Browser Profiles\Edge'),
     ])
+
+    # DualEngineCacheContainerTracker lists custom Edge data dirs used by
+    # IE-mode/DualEngine integrations (UiPath, etc.). Each value's data is
+    # a path like 'C:\\Users\\X\\AppData\\Local\\Microsoft\\Edge\\User Data\\Profile 2'
+    # or 'C:\\Users\\X\\AppData\\Local\\UiPath\\PIP Browser Profiles\\Edge\\Default'.
+    # We extract the parent 'User Data' (or 'Edge') folder of each so the
+    # patcher covers those profiles too.
+    tracker_keys = [
+        (winreg.HKEY_CURRENT_USER,  r'Software\Microsoft\Edge\DualEngineCacheContainerTracker'),
+        (winreg.HKEY_LOCAL_MACHINE, r'Software\Microsoft\Edge\DualEngineCacheContainerTracker'),
+    ]
+    for root, path in tracker_keys:
+        try:
+            with winreg.OpenKey(root, path) as key:
+                i = 0
+                while True:
+                    try:
+                        _, data, _ = winreg.EnumValue(key, i)
+                        i += 1
+                        if isinstance(data, str) and data:
+                            norm = os.path.normpath(data)
+                            # Walk up to find the 'User Data' or 'Edge' base folder
+                            parent = os.path.dirname(norm)
+                            # If path ends in 'Default'/'Profile N', go up one more
+                            base = os.path.basename(parent)
+                            if base in ('Default',) or base.startswith('Profile '):
+                                parent = os.path.dirname(parent)
+                            candidates.append(parent)
+                    except OSError:
+                        break
+        except (FileNotFoundError, OSError):
+            pass
 
     found = []
     seen = set()
