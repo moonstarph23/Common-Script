@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import subprocess
@@ -28,11 +29,13 @@ def close_edge_processes():
     
     return closed_count > 0
 
-def hide_restore_dialog():
-    """Set Edge policy HideRestoreDialogEnabled=1 (HKCU) to suppress the
-    'Restore pages' dialog that appears after a browser crash."""
-    key_path = r'Software\Policies\Microsoft\Edge'
+def hide_restore_dialog(user_profile):
+    """Suppress the Edge 'Restore pages' dialog after a browser crash.
+    Layers: 1) Registry policy (HideRestoreDialogEnabled), 2) Preferences JSON patch + session-file removal."""
     value_name = 'HideRestoreDialogEnabled'
+    key_path = r'Software\Policies\Microsoft\Edge'
+
+    # Layer 1: registry policy (best approach, persistent)
     try:
         key = winreg.HKEY_CURRENT_USER
         for part in key_path.split('\\'):
@@ -40,7 +43,7 @@ def hide_restore_dialog():
         winreg.SetValueEx(key, value_name, 0, winreg.REG_DWORD, 1)
         key.Close()
         print(f"✓ Set Edge policy {value_name}=1 (HKCU) - restore dialog will be hidden")
-        return True
+        return 'registry'
     except PermissionError:
         try:
             subprocess.run(
@@ -49,13 +52,43 @@ def hide_restore_dialog():
                 check=True, capture_output=True
             )
             print(f"✓ Set Edge policy {value_name}=1 (HKCU) via reg.exe")
-            return True
-        except subprocess.CalledProcessError as e:
-            print(f"✗ Failed to set {value_name}: {e.stderr.decode().strip()}")
-            return False
+            return 'registry'
+        except subprocess.CalledProcessError:
+            pass
+    except Exception:
+        pass
+
+    # Layer 2: Preferences JSON patch + delete session files (AppData, always writable)
+    if not user_profile:
+        return None
+    edge_default = os.path.join(user_profile, r'AppData\Local\Microsoft\Edge\User Data\Default')
+    preferences_path = os.path.join(edge_default, 'Preferences')
+    last_tabs_path = os.path.join(edge_default, 'Last Tabs')
+    last_session_path = os.path.join(edge_default, 'Last Session')
+
+    try:
+        for path, name in [(last_tabs_path, 'Last Tabs'), (last_session_path, 'Last Session')]:
+            if os.path.exists(path):
+                os.remove(path)
+                print(f"✓ Removed {name}")
+            else:
+                print(f"- {name} not found (nothing to clear)")
+
+        if os.path.isfile(preferences_path):
+            with open(preferences_path, 'r', encoding='utf-8') as f:
+                prefs = json.load(f)
+            prefs.setdefault('profile', {})['exit_type'] = 'Normal'
+            prefs['profile']['exited_cleanly'] = True
+            with open(preferences_path, 'w', encoding='utf-8') as f:
+                json.dump(prefs, f, indent=2)
+            print("✓ Patched Preferences: exit_type=Normal, exited_cleanly=True")
+            return 'preferences'
+        else:
+            print("- Preferences file not found (Edge may not have run yet)")
+            return None
     except Exception as e:
-        print(f"✗ Failed to set {value_name}: {e}")
-        return False
+        print(f"✗ Failed Preferences fallback: {e}")
+        return None
 
 def clear_edge_cache_and_history():
     """Clear Microsoft Edge cache and browsing history (including IE mode)"""
@@ -118,15 +151,17 @@ def clear_edge_cache_and_history():
             failed_count += 1
     
     # Hide restore pages dialog via Edge policy (HKCU)
-    restore_hidden = hide_restore_dialog()
+    restore_result = hide_restore_dialog(user_profile)
     
     # Summary
     print("\n" + "="*60)
     print(f"Summary: {cleared_count} items cleared, {failed_count} failed")
-    if restore_hidden:
+    if restore_result == 'registry':
         print("Restore pages dialog: hidden (HideRestoreDialogEnabled=1)")
+    elif restore_result == 'preferences':
+        print("Restore pages dialog: hidden (Preferences patched)")
     else:
-        print("Restore pages dialog: could not set policy")
+        print("Restore pages dialog: could not suppress")
     print("="*60)
     
     if failed_count > 0:
