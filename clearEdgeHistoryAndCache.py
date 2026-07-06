@@ -132,17 +132,29 @@ def hide_restore_dialog(user_profile):
 
         for profile_dir in profile_dirs:
             prefs_path = os.path.join(profile_dir, 'Preferences')
-            last_tabs = os.path.join(profile_dir, 'Last Tabs')
-            last_session = os.path.join(profile_dir, 'Last Session')
             profile_name = os.path.basename(profile_dir)
 
-            # Remove session files (nothing to restore = no restore dialog)
-            for path, fname in [(last_tabs, 'Last Tabs'), (last_session, 'Last Session')]:
+            # Remove ALL session/tab files - newer Edge uses Current Tabs/Current Session
+            # and a Sessions/ subdirectory in addition to the legacy Last Tabs/Last Session.
+            session_paths = [
+                ('Last Tabs',      os.path.join(profile_dir, 'Last Tabs')),
+                ('Last Session',   os.path.join(profile_dir, 'Last Session')),
+                ('Current Tabs',   os.path.join(profile_dir, 'Current Tabs')),
+                ('Current Session', os.path.join(profile_dir, 'Current Session')),
+            ]
+            for fname, path in session_paths:
                 try:
                     if os.path.exists(path):
                         os.remove(path)
                 except Exception as e:
                     print(f"  Could not remove {fname} ({channel}/{profile_name}): {e}")
+            # Sessions subdirectory (SNSS-style session storage)
+            sessions_dir = os.path.join(profile_dir, 'Sessions')
+            try:
+                if os.path.isdir(sessions_dir):
+                    shutil.rmtree(sessions_dir, ignore_errors=True)
+            except Exception as e:
+                print(f"  Could not remove Sessions dir ({channel}/{profile_name}): {e}")
 
             # Patch Preferences with retries (file may be locked briefly after kill)
             if not os.path.isfile(prefs_path):
@@ -168,6 +180,27 @@ def hide_restore_dialog(user_profile):
             if patched:
                 print(f"✓ Patched Preferences [{channel}/{profile_name}]")
                 patched_count += 1
+
+        # Patch Local State: per-profile exit_type in profile.info_cache
+        local_state_path = os.path.join(edge_user_data, 'Local State')
+        if os.path.isfile(local_state_path):
+            for attempt in range(5):
+                try:
+                    with open(local_state_path, 'r', encoding='utf-8') as f:
+                        ls = json.load(f)
+                    info_cache = ls.setdefault('profile', {}).setdefault('info_cache', {})
+                    for prof_name in info_cache:
+                        info_cache[prof_name]['exit_type'] = 'Normal'
+                        info_cache[prof_name]['exited_cleanly'] = True
+                    with open(local_state_path, 'w', encoding='utf-8') as f:
+                        json.dump(ls, f, indent=2)
+                    print(f"✓ Patched Local State [{channel}]")
+                    break
+                except (PermissionError, OSError):
+                    if attempt < 4:
+                        time.sleep(0.5)
+                    else:
+                        print(f"  Could not patch Local State ({channel}): file locked")
 
     if patched_count > 0:
         return 'preferences'
