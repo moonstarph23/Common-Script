@@ -34,10 +34,25 @@ def hide_restore_dialog():
     key_path = r'Software\Policies\Microsoft\Edge'
     value_name = 'HideRestoreDialogEnabled'
     try:
-        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
-            winreg.SetValueEx(key, value_name, 0, winreg.REG_DWORD, 1)
+        key = winreg.HKEY_CURRENT_USER
+        for part in key_path.split('\\'):
+            key = winreg.CreateKey(key, part)
+        winreg.SetValueEx(key, value_name, 0, winreg.REG_DWORD, 1)
+        key.Close()
         print(f"✓ Set Edge policy {value_name}=1 (HKCU) - restore dialog will be hidden")
         return True
+    except PermissionError:
+        try:
+            subprocess.run(
+                ['reg', 'add', f'HKCU\\{key_path}', '/v', value_name,
+                 '/t', 'REG_DWORD', '/d', '1', '/f'],
+                check=True, capture_output=True
+            )
+            print(f"✓ Set Edge policy {value_name}=1 (HKCU) via reg.exe")
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"✗ Failed to set {value_name}: {e.stderr.decode().strip()}")
+            return False
     except Exception as e:
         print(f"✗ Failed to set {value_name}: {e}")
         return False
