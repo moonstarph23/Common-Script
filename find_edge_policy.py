@@ -86,7 +86,7 @@ def enum_subkeys(root, path):
     return subs
 
 
-def scan_location(label, root, path, ptype):
+def scan_location(label, root, path, ptype, hits=None):
     print(f"\n  [{label}] {path}")
     print(f"  Type: {ptype}")
 
@@ -108,6 +108,8 @@ def scan_location(label, root, path, ptype):
         for name, data, vtype in values:
             marker = "  <<< HideRestoreDialogEnabled" if name == 'HideRestoreDialogEnabled' else ""
             print(f"       {name} = {data!r}  ({vtype}){marker}")
+            if name == 'HideRestoreDialogEnabled' and hits is not None:
+                hits.append((label, path, name, data, vtype))
 
     # Recurse into subkeys
     subs = enum_subkeys(root, path)
@@ -122,6 +124,8 @@ def scan_location(label, root, path, ptype):
                 for name, data, vtype in sub_values:
                     marker = "  <<< HideRestoreDialogEnabled" if name == 'HideRestoreDialogEnabled' else ""
                     print(f"       {name} = {data!r}  ({vtype}){marker}")
+                    if name == 'HideRestoreDialogEnabled' and hits is not None:
+                        hits.append((f"{label}\\{sub}", sub_path, name, data, vtype))
 
     return bool(values)
 
@@ -300,27 +304,31 @@ def main():
     print("PART 1: Check all known Edge policy registry locations")
     print("-" * 70)
 
+    hits = []  # shared between Part 1 and Part 2
     found_any = False
     for label, root, path, ptype in EDGE_POLICY_LOCATIONS:
-        if scan_location(label, root, path, ptype):
+        if scan_location(label, root, path, ptype, hits=hits):
             found_any = True
 
     print("\n" + "-" * 70)
     print("PART 2: Deep search for HideRestoreDialogEnabled anywhere under")
     print("        HKCU\\Software\\Microsoft  and  HKLM\\Software\\Microsoft")
+    print("        (catches anything outside the known policy trees)")
     print("-" * 70)
 
-    hits = []
-    search_for_value(winreg.HKEY_CURRENT_USER,  r'Software\Microsoft', 'HideRestoreDialogEnabled', hits, "HKCU")
-    search_for_value(winreg.HKEY_LOCAL_MACHINE, r'Software\Microsoft', 'HideRestoreDialogEnabled', hits, "HKLM")
+    deep_hits = []
+    search_for_value(winreg.HKEY_CURRENT_USER,  r'Software\Microsoft', 'HideRestoreDialogEnabled', deep_hits, "HKCU")
+    search_for_value(winreg.HKEY_LOCAL_MACHINE, r'Software\Microsoft', 'HideRestoreDialogEnabled', deep_hits, "HKLM")
+    hits.extend(deep_hits)
 
-    if hits:
-        print(f"\n  Found HideRestoreDialogEnabled at {len(hits)} location(s):")
-        for label, path, name, data, vtype in hits:
+    if deep_hits:
+        print(f"\n  Found HideRestoreDialogEnabled at {len(deep_hits)} additional location(s):")
+        for label, path, name, data, vtype in deep_hits:
             print(f"    {label}\\{path}")
             print(f"      {name} = {data!r} ({vtype})")
     else:
-        print("\n  HideRestoreDialogEnabled not found anywhere under HKCU/HKLM Software\\Microsoft.")
+        print("\n  HideRestoreDialogEnabled not found under HKCU/HKLM Software\\Microsoft")
+        print("  (expected - it normally lives under Software\\Policies, see Part 1)")
 
     print("\n" + "-" * 70)
     print("PART 3: EdgeUpdate policies (used by the Edge updater service)")
