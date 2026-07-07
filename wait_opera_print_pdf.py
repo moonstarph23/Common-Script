@@ -124,7 +124,24 @@ def wait_for_opera_print_pdf(timeout: int, move_to_path: str = None) -> tuple:
 
 
 if __name__ == "__main__":
-    # CLI usage: python wait_opera_print_pdf.py <timeout> [move_to_path]
+    # CLI usage:
+    #   python wait_opera_print_pdf.py <timeout> [move_to_path]
+    #
+    # UiPath "Arguments" field (VB.NET expression, single String value):
+    #   The Arguments property is compiled as a VB.NET expression and must be a
+    #   single string literal. Bare tokens separated by spaces are NOT valid VB
+    #   and produce error BC30198 (")' expected"). Wrap the whole argv in one
+    #   outer pair of double quotes and DOUBLE every inner double quote so the
+    #   paths-with-spaces stay quoted at runtime:
+    #
+    #     """R:\Finance\Revenue Audit\HOTEL\Opera Download_Transaction is DATE\Script\wait_opera_print_pdf.py"" 60 ""R:\Reports\opera.pdf"""
+    #
+    #   which evaluates at runtime to the single string:
+    #     "R:\...\wait_opera_print_pdf.py" 60 "R:\Reports\opera.pdf"
+    #   and is then split by the launcher into 3 argv tokens.
+    #
+    #   Alternatively, if the activity accepts IEnumerable(Of String), use:
+    #     New String() {"R:\...\wait_opera_print_pdf.py", "60", "R:\Reports\opera.pdf"}
     if len(sys.argv) > 1:
         timeout_val = int(sys.argv[1])
     else:

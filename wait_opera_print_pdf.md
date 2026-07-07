@@ -71,10 +71,56 @@ In a UiPath **Run** / **Start Process** activity, set:
 | Field             | Value                                                                                                                         |
 |-------------------|-------------------------------------------------------------------------------------------------------------------------------|
 | FileName          | `python.exe` (or full path, e.g. `C:\Python39\python.exe`)                                                                   |
-| Arguments         | `"R:\Finance\Revenue Audit\HOTEL\City Ledger Report\Processes\wait_opera_print_pdf.py" 60 "R:\Reports\opera.pdf"`             |
+| Arguments         | see below                                                                                                                     |
 | WorkingDirectory  | `R:\Finance\Revenue Audit\HOTEL\City Ledger Report\Processes\`                                                                |
 
 Adjust the script path, timeout, and move target to your environment. Quote paths containing spaces.
+
+### `Arguments` field — common pitfall (error `BC30198`)
+
+The `Arguments` property is a **VB.NET expression** that must evaluate to a **single `String`**. Entering three bare tokens separated by spaces:
+
+```vbnet
+"R:\...\wait_opera_print_pdf.py" 60 "R:\Reports\opera.pdf"   ' WRONG
+```
+
+is invalid VB (a string literal cannot be followed by a bare integer and another string) and produces:
+
+```
+error BC30198: ')' expected
+```
+
+### Correct form — wrap in one outer string and **double** inner quotes
+
+Double every inner `"` so the paths-with-spaces stay quoted at runtime. The whole thing is one VB string literal:
+
+```vbnet
+"""R:\Finance\Revenue Audit\HOTEL\Opera Download_Transaction is DATE\Script\wait_opera_print_pdf.py"" 60 ""R:\Reports\opera.pdf"""
+```
+
+At runtime this evaluates to the single string:
+
+```
+"R:\Finance\Revenue Audit\HOTEL\Opera Download_Transaction is DATE\Script\wait_opera_print_pdf.py" 60 "R:\Reports\opera.pdf"
+```
+
+which the launcher splits into the three argv tokens the script expects:
+
+| argv | value                                            |
+|------|--------------------------------------------------|
+| `1`  | `R:\...\wait_opera_print_pdf.py` (script path)   |
+| `2`  | `60` (timeout in seconds)                        |
+| `3`  | `R:\Reports\opera.pdf` (move target)             |
+
+### Alternative — `IEnumerable(Of String)`
+
+If the activity accepts an argument collection instead of a single string, use:
+
+```vbnet
+New String() {"R:\...\wait_opera_print_pdf.py", "60", "R:\Reports\opera.pdf"}
+```
+
+This avoids the doubled-quote encoding entirely.
 
 ## Dependencies
 
