@@ -1,9 +1,11 @@
 import os
+import sys
 import time
 import glob
+import shutil
 
 
-def wait_for_opera_print_pdf(timeout: int) -> tuple:
+def wait_for_opera_print_pdf(timeout: int, move_to_path: str = None) -> tuple:
     """
     Wait up to <timeout> seconds for an OperaPrint*.pdf to appear fully
     downloaded in the user's INetCache folder.
@@ -16,8 +18,12 @@ def wait_for_opera_print_pdf(timeout: int) -> tuple:
         2. Size unchanged between two stats 2 seconds apart
         3. File is not locked by another process (os.open O_RDWR succeeds)
 
+    If move_to_path is provided (a full file path including filename), the
+    verified PDF is moved there (overwriting if it exists) and the destination
+    path is returned. On move failure, logs the error and returns (True, source_path).
+
     Returns:
-        (True, path)  on success
+        (True, path)  on success (destination path if moved, else source path)
         (False, None) on timeout
     Does not raise.
     """
@@ -89,6 +95,22 @@ def wait_for_opera_print_pdf(timeout: int) -> tuple:
                 continue
 
             print(f"  {os.path.basename(path)}: fully downloaded at {path}")
+            if move_to_path:
+                try:
+                    parent = os.path.dirname(move_to_path)
+                    if parent:
+                        os.makedirs(parent, exist_ok=True)
+                    if os.path.exists(move_to_path):
+                        try:
+                            os.remove(move_to_path)
+                        except OSError as e:
+                            print(f"  Could not remove existing target {move_to_path}: {e}; shutil.move will try to replace.")
+                    shutil.move(path, move_to_path)
+                    print(f"  Moved to {move_to_path}")
+                    return True, move_to_path
+                except (OSError, shutil.Error) as e:
+                    print(f"  Move failed: {e}. PDF remains at source: {path}")
+                    return True, path
             return True, path
 
         attempt += 1
@@ -102,12 +124,13 @@ def wait_for_opera_print_pdf(timeout: int) -> tuple:
 
 
 if __name__ == "__main__":
-    # CLI usage: python wait_opera_print_pdf.py <timeout>
-    if len(__import__('sys').argv) > 1:
-        timeout_val = int(__import__('sys').argv[1])
+    # CLI usage: python wait_opera_print_pdf.py <timeout> [move_to_path]
+    if len(sys.argv) > 1:
+        timeout_val = int(sys.argv[1])
     else:
         timeout_val = 60
-    success, file_path = wait_for_opera_print_pdf(timeout_val)
+    move_target = sys.argv[2] if len(sys.argv) > 2 else None
+    success, file_path = wait_for_opera_print_pdf(timeout_val, move_target)
     if success:
         print(f"SUCCESS: {file_path}")
     else:
