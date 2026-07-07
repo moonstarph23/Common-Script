@@ -277,27 +277,40 @@ def click_images(imagePath1: str, imagePath2: str, timeout: int) -> None:
         return False
     
     while time.time() < end_time and attempt <= attemptCount:
+        clicked_any = False
         # Try first image
         print(f"Attempt {attempt}: Looking for first image...")
-        if not find_and_click_image(imagePath1, "first image"):
+        if find_and_click_image(imagePath1, "first image"):
+            clicked_any = True
+        else:
             print(f"Attempt {attempt}: First image not found")
         
         # Try second image
         print(f"Attempt {attempt}: Looking for second image...")
-        if not find_and_click_image(imagePath2, "second image"):
+        if find_and_click_image(imagePath2, "second image"):
+            clicked_any = True
+        else:
             print(f"Attempt {attempt}: Second image not found")
         
         # Try third image
         print(f"Attempt {attempt}: Looking for third image...")
-        if not find_and_click_image(imagePath3, "third image"):
+        if find_and_click_image(imagePath3, "third image"):
+            clicked_any = True
+        else:
             print(f"Attempt {attempt}: Third image not found")
         
         # Try fourth image
         print(f"Attempt {attempt}: Looking for fourth image...")
-        if not find_and_click_image(imagePath4, "fourth image"):
+        if find_and_click_image(imagePath4, "fourth image"):
+            clicked_any = True
+        else:
             print(f"Attempt {attempt}: Fourth image not found")
         
-        attempt += 1
+        if clicked_any:
+            print(f"Successful click(s) this attempt. Resetting attempt counter.")
+            attempt = 1
+        else:
+            attempt += 1
         remaining_time = end_time - time.time()
         if remaining_time > 0:
             print(f"Waiting 2 seconds before next attempt... ({remaining_time:.1f}s remaining)")
