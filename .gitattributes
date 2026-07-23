@@ -1,0 +1,2 @@
+# Keep exported VBA modules Windows-compatible.
+*.bas text eol=crlf
