@@ -13,9 +13,7 @@ Sub Clear()
            wsInput.ShowAllData
         End If
     End If
-    Sheets("SFR (MTD)").Select
-    Columns("A:B").Select
-    Selection.ClearContents
+    wsInput.Columns("A:B").ClearContents
 
 ' Define the worksheets
     Set wsTemp = ThisWorkbook.Sheets("MENU ITEM 2")
@@ -27,14 +25,6 @@ Sub Clear()
         End If
     End If
 
-'Find the last used row in column A
-    lastRow = wsTemp.Cells(wsTemp.Rows.Count, "A").End(xlUp).Row
-
-    ' Check if there are rows to clear
-    If lastRow >= 2 Then
-        wsTemp.Range("A2:S" & lastRow).ClearContents
-    End If
-
     ' Define the worksheets
     Set wsSum = ThisWorkbook.Sheets("RAW")
 
@@ -43,14 +33,6 @@ Sub Clear()
         If wsSum.FilterMode Then
             wsSum.ShowAllData
         End If
-    End If
-
-    'Find the last used row in column A
-    lastRowC = wsSum.Cells(wsSum.Rows.Count, "A").End(xlUp).Row
-
-    ' Check if there are rows to clear
-    If lastRowC >= 2 Then
-        wsSum.Range("A2:AO" & lastRowC).ClearContents
     End If
 
     ' Define the worksheets
@@ -153,11 +135,4 @@ Sub Clear()
         End If
     End If
 
-    'Find the last used row in column A
-    lastRowX = wsEF.Cells(wsEF.Rows.Count, "B").End(xlUp).Row
-
-    ' Check if there are rows to clear
-    If lastRowX >= 4 Then
-        wsEF.Range("A4:L" & lastRowX).ClearContents
-    End If
 End Sub

@@ -12,6 +12,11 @@ Sub CopyRAWSheet()
     Dim deptRevRow As Long
     Dim deptRevTotalRow As Long
     Dim originalDisplayAlerts As Boolean
+    Dim firstTargetRow As Long
+    Dim lastTargetRow As Long
+    Dim importedRows As Long
+    Dim visibleArea As Range
+    Dim visibleData As Range
 
     ' Save the current state of DisplayAlerts
     originalDisplayAlerts = Application.DisplayAlerts
@@ -24,6 +29,7 @@ Sub CopyRAWSheet()
     Set targetSheet = mainWorkbook.Sheets("RAW") ' Change Cover to your target sheet name
     Set filesSheet = mainWorkbook.Sheets("Files") ' Set Files sheet
     Set wsCriteria = mainWorkbook.Sheets("FILTER")
+    targetSheet.Range("AP2:AP3").Value = 0
 
     ' Get the source file path from Files sheet cell B5
     sourceFilePath = filesSheet.Range("B4").Value
@@ -87,8 +93,23 @@ Dim Rng As Range
     Next i
 NewSheet.Range("A1:AI1").AutoFilter Field:=17, Criteria1:=criteria, Operator:=xlFilterValues
 Set Rng = NewSheet.Range("A2:AI" & lastSourceRowN).CurrentRegion
-    NewSheet.Range("A2:AI" & lastSourceRowN).Copy
-    targetSheet.Range("A2").PasteSpecial xlPasteValuesAndNumberFormats
+    On Error Resume Next
+    Set visibleData = NewSheet.Range("A2:AI" & lastSourceRowN).SpecialCells(xlCellTypeVisible)
+    On Error GoTo ErrorHandler
+    If visibleData Is Nothing Then
+        Err.Raise vbObjectError + 1000, "CopyRAWSheet", _
+            "No RAW rows matched the filter."
+    End If
+
+    For Each visibleArea In visibleData.Areas
+        importedRows = importedRows + visibleArea.Rows.Count
+    Next visibleArea
+
+    firstTargetRow = targetSheet.Cells(targetSheet.Rows.Count, "A").End(xlUp).Row + 1
+    If firstTargetRow < 2 Then firstTargetRow = 2
+
+    visibleData.Copy
+    targetSheet.Range("A" & firstTargetRow).PasteSpecial xlPasteValuesAndNumberFormats
     Application.DisplayAlerts = False
     Application.CutCopyMode = False
 
@@ -102,6 +123,11 @@ Set Rng = NewSheet.Range("A2:AI" & lastSourceRowN).CurrentRegion
     With targetSheet
         .Columns("A:AI").HorizontalAlignment = xlLeft
     End With
+    lastTargetRow = firstTargetRow + importedRows - 1
+    targetSheet.Range("AO" & firstTargetRow & ":AO" & lastTargetRow).Value = _
+        Format(filesSheet.Range("B28").Value, "mm/dd/yyyy")
+    targetSheet.Range("AP2").Value = firstTargetRow
+    targetSheet.Range("AP3").Value = lastTargetRow
     targetSheet.Activate
     Range("A1").Select
 

@@ -13,9 +13,7 @@ Sub ClearSEM()
            wsInput.ShowAllData
         End If
     End If
-    Sheets("SFR (MTD)").Select
-    Columns("A:B").Select
-    Selection.ClearContents
+    wsInput.Columns("A:B").ClearContents
 
 ' Define the worksheets
     Set wsTemp = ThisWorkbook.Sheets("MENU ITEM 2")
@@ -25,14 +23,6 @@ Sub ClearSEM()
         If wsTemp.FilterMode Then
             wsTemp.ShowAllData
         End If
-    End If
-
-'Find the last used row in column A
-    lastRow = wsTemp.Cells(wsTemp.Rows.Count, "A").End(xlUp).Row
-
-    ' Check if there are rows to clear
-    If lastRow >= 2 Then
-        wsTemp.Range("A2:S" & lastRow).ClearContents
     End If
 
     ' Define the worksheets
@@ -45,14 +35,6 @@ Sub ClearSEM()
         End If
     End If
 
-    'Find the last used row in column A
-    lastRowC = wsSum.Cells(wsSum.Rows.Count, "A").End(xlUp).Row
-
-    ' Check if there are rows to clear
-    If lastRowC >= 2 Then
-        wsSum.Range("A2:AO" & lastRowC).ClearContents
-    End If
-
     ' Define the worksheets
     Set wsCD = ThisWorkbook.Sheets("EMP CLOSED CHECK")
 
@@ -63,12 +45,4 @@ Sub ClearSEM()
         End If
     End If
 
-    'Find the last used row in column A
-    lastRowS = wsCD.Cells(wsCD.Rows.Count, "B").End(xlUp).Row
-
-    ' Check if there are rows to clear
-    If lastRowS >= 4 Then
-        wsCD.Range("A4:M" & lastRowS).ClearContents
-        wsCD.Range("M3").ClearContents
-    End If
 End Sub

@@ -12,6 +12,11 @@ Sub CopyMISheet()
     Dim deptRevRow As Long
     Dim deptRevTotalRow As Long
     Dim originalDisplayAlerts As Boolean
+    Dim firstTargetRow As Long
+    Dim lastTargetRow As Long
+    Dim importedRows As Long
+    Dim visibleArea As Range
+    Dim visibleData As Range
 
     ' Save the current state of DisplayAlerts
     originalDisplayAlerts = Application.DisplayAlerts
@@ -81,23 +86,32 @@ Sub CopyMISheet()
         .AutoFilterMode = False
        Rng.AutoFilter Field:=1, Criteria1:="<>MODIFIER"
 
-        ' Delete visible rows
-        On Error Resume Next ' In case there are no visible rows
-    dta.SpecialCells(xlCellTypeVisible).Copy
-        On Error GoTo 0
+        On Error Resume Next
+        Set visibleData = dta.SpecialCells(xlCellTypeVisible)
+        On Error GoTo ErrorHandler
+        If visibleData Is Nothing Then
+            Err.Raise vbObjectError + 1000, "CopyMISheet", _
+                "No menu item rows matched the filter."
+        End If
+
+        For Each visibleArea In visibleData.Areas
+            importedRows = importedRows + visibleArea.Rows.Count
+        Next visibleArea
+        visibleData.Copy
 
         ' Remove filter
         .AutoFilterMode = False
     End With
 
-    'NewSheet.Range("A2:Q" & lastSourceRowN).Copy
-    targetSheet.Range("A2").PasteSpecial Paste:=xlPasteValuesAndNumberFormats
-    targetSheet.Range("A2").PasteSpecial Paste:=xlPasteValuesAndNumberFormats
-    targetSheet.Range("A2").PasteSpecial Paste:=xlPasteFormats
+    firstTargetRow = targetSheet.Cells(targetSheet.Rows.Count, "A").End(xlUp).Row + 1
+    If firstTargetRow < 2 Then firstTargetRow = 2
+
+    targetSheet.Range("A" & firstTargetRow).PasteSpecial Paste:=xlPasteValuesAndNumberFormats
+    targetSheet.Range("A" & firstTargetRow).PasteSpecial Paste:=xlPasteFormats
     Application.CutCopyMode = False
-    lastSourceRowT = targetSheet.Cells(targetSheet.Rows.Count, "A").End(xlUp).Row
+    lastTargetRow = firstTargetRow + importedRows - 1
     targetSheet.Range("S1").Copy
-    targetSheet.Range("S2:S" & lastSourceRowT).PasteSpecial
+    targetSheet.Range("S" & firstTargetRow & ":S" & lastTargetRow).PasteSpecial
 
     'targetSheet.Range("B1").PasteSpecial Paste:=xlPasteFormats
     Application.CutCopyMode = False
@@ -112,6 +126,8 @@ Sub CopyMISheet()
     With targetSheet
         .Columns("A:B").HorizontalAlignment = xlLeft
     End With
+    targetSheet.Range("T" & firstTargetRow & ":T" & lastTargetRow).Value = _
+        Format(filesSheet.Range("B28").Value, "mm/dd/yyyy")
     targetSheet.Activate
     Range("A1").Select
 

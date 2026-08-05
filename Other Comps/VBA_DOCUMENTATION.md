@@ -84,8 +84,8 @@ All executable procedures are parameterless public `Sub` procedures. No VBA
 | `AMENITY.bas` | `CopyHASheet` | `Htl Amenity` | `Files!C9` |
 | `SPA.bas` | `CopySPSheet` | `COMP SPA PACKAGE` | `Files!C10` |
 | `OTHERS.bas` | `CopyOTHERSheet` | `OTHERS` | `Files!C11` |
-| `FClear.bas` | `ClearSEM` | Four staging sheets | None |
-| `Clearr.bas` | `Clear` | Nine staging/output sheets | None |
+| `FClear.bas` | `ClearSEM` | SFR clear and staging unfilter | None |
+| `Clearr.bas` | `Clear` | SFR/category clear and staging unfilter | None |
 | `ThisWorkbook.bas` | None | Workbook metadata only | None |
 
 ### File and status map
@@ -96,6 +96,7 @@ All executable procedures are parameterless public `Sub` procedures. No VBA
 | `Files!B3` | Source workbook path used by `CopyMISheet` |
 | `Files!B4` | Source workbook path used by `CopyRAWSheet` |
 | `Files!B5` | Source workbook path used by `CopyFilterSheet` |
+| `Files!B28` | Processing date written to imported and category records |
 | `Files!C2:C11` | Success or error messages for individual routines |
 
 ## RunMacro
@@ -114,9 +115,9 @@ Runs the primary import pipeline in a fixed order. The order matters because
 |---:|---|---|
 | 1 | `CopysfrSheet` | Imports the SFR source from `Files!B2` |
 | 2 | `CopyFilterSheet` | Builds `FILTER` from `Files!B5` |
-| 3 | `CopyMISheet` | Builds `MENU ITEM 2` from `Files!B3` |
-| 4 | `CopyRAWSheet` | Uses `Files!B4` and `FILTER` to build `RAW` |
-| 5 | `CopyECCSheet` | Uses the `RAW` row count to expand `EMP CLOSED CHECK` |
+| 3 | `CopyMISheet` | Appends to `MENU ITEM 2` from `Files!B3` |
+| 4 | `CopyRAWSheet` | Uses `Files!B4` and `FILTER` to append to `RAW` |
+| 5 | `CopyECCSheet` | Appends the latest RAW batch to `EMP CLOSED CHECK` |
 
 ```mermaid
 flowchart TD
@@ -138,7 +139,8 @@ flowchart TD
 - The routine has no error handler and no combined success status.
 - Most child routines catch errors, write an error status, and return. Therefore,
   this pipeline can continue using stale or partial data after a failed step.
-- `ClearSEM` is not called. A shorter import can leave data from an earlier run.
+- Menu, RAW, and EMP imports append by design; rerunning the same sources creates
+  duplicate accumulated records.
 - There is no rollback. Earlier successful imports remain if a later step fails.
 
 ## CopysfrSheet
@@ -245,8 +247,10 @@ is `MODIFIER`, and imports the resulting records to `MENU ITEM 2`.
 - Twelve unwanted columns are deleted from the temporary copy.
 - Temporary/output column K, originally source column T, is filtered with
   `<>MODIFIER`.
-- Visible temporary rows `A2:Q` are pasted to `MENU ITEM 2!A2`.
-- The template in `MENU ITEM 2!S1` is copied down column S.
+- Visible temporary rows `A2:Q` are appended after the last populated target
+  column-A row, with row 2 as the minimum destination.
+- The template in `MENU ITEM 2!S1` is copied only to the newly appended rows.
+- New column-T rows receive the formatted processing date from `Files!B28`.
 
 ### Retained column mapping
 
@@ -272,18 +276,18 @@ flowchart TD
     D --> E["Copy A11:AC through last Q row to temp"]
     E --> F["Delete 12 columns; retain A:Q"]
     F --> G["Filter temp K for values not equal to MODIFIER"]
-    G --> H["Try to copy visible A2:Q rows"]
-    H --> I["Disable error handler and remove filter"]
-    I --> J["Paste data to MENU ITEM 2 A2"]
-    J --> K["Copy S1 down to last target row"]
+    G --> H["Collect visible A2:Q rows or report no matches"]
+    H --> I["Count visible rows; copy them; remove filter"]
+    I --> J["Find first row after existing target column A"]
+    J --> K["Append data and fill S for new rows"]
     K --> L["Close source without saving"]
-    L --> M["Files C3 = Successful"]
-    B -. "Early error" .-> X["Files C3 = error; restore alerts"]
-    C -. "Early error" .-> X
-    G -. "Early error" .-> X
-    I -. "Later error" .-> Y["Unhandled stop; cleanup may not run"]
-    J -. "Later error" .-> Y
-    K -. "Later error" .-> Y
+    L --> M["Align A:B; fill new T rows from Files B28"]
+    M --> N["Files C3 = Successful"]
+    B -. "Error" .-> X["Files C3 = error; restore alerts"]
+    C -. "Error" .-> X
+    G -. "Error" .-> X
+    H -. "No visible rows" .-> X
+    J -. "Error" .-> X
 ```
 
 ### Side effects and risks
@@ -291,12 +295,13 @@ flowchart TD
 - The original source sheet is unmerged in memory. The temporary sheet and all
   source changes are discarded only when the normal close is reached.
 - A pre-existing source sheet named `NewSheetName` causes a naming error.
-- After the visible-cell copy attempt, `On Error GoTo 0` disables the original
-  handler. Later paste, close, or status errors are unhandled.
-- If no visible rows exist, the copy error is ignored and the later paste can
-  fail or use stale clipboard content.
-- Existing target rows are not cleared. A shorter import can leave stale rows.
-- The same values-and-number-formats paste is performed twice.
+- If no visible rows exist, the routine reports an error instead of attempting a
+  paste or using old clipboard data.
+- Visible areas are counted before the paste, so S and T use the exact imported
+  batch size rather than relying on every new column-A cell being populated.
+- Existing target rows are retained, so importing the same source repeatedly
+  appends duplicate records.
+- Column S formulas and column T dates are limited to the current appended batch.
 - Success or an error description is intended for `Files!C3`.
 
 ## CopyRAWSheet
@@ -307,17 +312,22 @@ flowchart TD
 ### Purpose
 
 Transforms the external workbook in `Files!B4`, filters it using criteria from
-`FILTER!A:A`, and imports the result to `RAW!A2`.
+`FILTER!A:A`, and appends the result to `RAW`.
 
 ### Transformation
 
-1. Use the first source worksheet.
-2. Add a temporary worksheet named `NewSheetName`.
-3. Unmerge source columns A:AN.
-4. Copy source `A6:AN[last row in V]` to the temporary sheet as values/formats.
-5. Delete original columns C:G from the temporary copy.
-6. Filter temporary field 17, column Q, which corresponds to original column V.
-7. Copy temporary `A2:AI[last row in A]` to `RAW!A2`.
+1. Reset `RAW!AP2:AP3` to zero so a failed import cannot reuse stale bounds.
+2. Open the source and use its first worksheet.
+3. Add a temporary worksheet named `NewSheetName`.
+4. Unmerge source columns A:AN.
+5. Copy source `A6:AN[last row in V]` to the temporary sheet as values/formats.
+6. Delete original columns C:G from the temporary copy.
+7. Filter temporary field 17, column Q, which corresponds to original column V.
+8. Explicitly collect and count visible temporary `A2:AI` rows.
+9. Append those rows after the final populated RAW
+   column-A row, with row 2 as the minimum destination.
+10. Fill column AO for the new rows from `Files!B28`.
+11. Record the successful batch boundaries in `RAW!AP2:AP3`.
 
 ### Criteria
 
@@ -328,21 +338,22 @@ and passes the array to AutoFilter with `xlFilterValues`.
 
 ```mermaid
 flowchart TD
-    A["Start"] --> B["Read Files B4 and open source"]
-    B --> C["Use first sheet; add NewSheetName"]
-    C --> D["Unmerge source A:AN"]
-    D --> E["Copy A6:AN through last V row to temp"]
-    E --> F["Delete original columns C:G"]
-    F --> G["Build criteria array from FILTER column A"]
-    G --> H["Filter temp field 17 / column Q"]
-    H --> I["Copy temp A2:AI through last A row"]
-    I --> J["Paste values and formats to RAW A2"]
+    A["Start"] --> B["Reset RAW AP2:AP3"]
+    B --> C["Read Files B4 and open source"]
+    C --> D["Use first sheet; add NewSheetName"]
+    D --> E["Unmerge source A:AN"]
+    E --> F["Copy A6:AN through last V row to temp"]
+    F --> G["Delete C:G; build criteria from FILTER A"]
+    G --> H["Filter field 17 / Q; collect visible rows"]
+    H --> I["Find first row after existing RAW column A"]
+    I --> J["Append values and number formats"]
     J --> K["Close source without saving"]
-    K --> L["Left-align RAW A:AI"]
-    L --> M["Files C4 = Successful"]
-    B -. "Error" .-> X["Files C4 = error; restore alerts"]
-    C -. "Error" .-> X
-    E -. "Error" .-> X
+    K --> L["Align A:AI; fill AO from Files B28"]
+    L --> M["Store batch bounds in AP2:AP3"]
+    M --> N["Files C4 = Successful"]
+    C -. "Error" .-> X["Files C4 = error; restore alerts"]
+    D -. "Error" .-> X
+    F -. "Error" .-> X
     H -. "Error" .-> X
     J -. "Error" .-> X
 ```
@@ -350,14 +361,19 @@ flowchart TD
 ### Side effects and risks
 
 - The temporary field mapping after deleting C:G is A, B, H through AN.
-- The filter header is temporary row 1; data copied to `RAW` begins at row 2.
-- The copied range is not explicitly limited with
-  `SpecialCells(xlCellTypeVisible)`. The routine relies on Excel's filtered-range
-  copy behavior.
+- The filter header is temporary row 1; the first import begins at RAW row 2 and
+  later imports append after existing column-A data.
+- The copied range is explicitly limited to visible cells. No-match errors are
+  reported before any paste occurs.
 - The criteria array is sized to the last row number rather than the count of
   nonblank criteria, so blank array elements can remain.
 - `Application.ScreenUpdating` is set to `False` and is not restored.
-- Existing RAW data below a shorter new import is not cleared.
+- Existing RAW rows are retained, so importing the same source repeatedly
+  appends duplicate records.
+- Column AO identifies each new row's processing date. AP2 and AP3 identify the
+  first and last rows of the latest appended batch.
+- AP2 and AP3 are reset to zero before import. If RAW import fails, the following
+  `CopyECCSheet` call rejects those invalid bounds instead of reusing an old batch.
 - On error, the source can remain open after being unmerged and modified in
   memory.
 - Success or an error description is written to `Files!C4`.
@@ -369,45 +385,52 @@ flowchart TD
 
 ### Purpose
 
-Counts records in `RAW`, stores the count in `RAW!AP1`, and expands the template
-row `EMP CLOSED CHECK!A3:L3` to create one template row per RAW record.
+Counts records in `RAW`, stores the total in `RAW!AP1`, and appends template rows
+to `EMP CLOSED CHECK` for only the latest RAW batch identified by `RAW!AP2:AP3`.
 
 ### Calculations
 
 | Value | Calculation |
 |---|---|
-| `RowCount` | Last used row in `RAW` column A |
-| `totalRows` | `RowCount - 1`, with a minimum of zero |
-| `lastRow` | `totalRows + 2`, equivalent to `RowCount + 1` |
-| Paste target | `EMP CLOSED CHECK!A4:L[lastRow]` |
+| `rowCount` | Last used row in `RAW` column A |
+| `totalRows` | `rowCount - 1`, written to `RAW!AP1` |
+| `rawFirstRow` | Latest RAW batch start from `RAW!AP2` |
+| `rawLastRow` | Latest RAW batch end from `RAW!AP3` |
+| `firstTargetRow` | Row after the last populated EMP column-B row, minimum 4 |
+| Paste target | New rows in `EMP CLOSED CHECK!A:L` only |
 
 ### Flow
 
 ```mermaid
 flowchart TD
-    A["Start"] --> B["Find last RAW row from column A"]
-    B --> C["Calculate totalRows = last row - 1"]
-    C --> D["Write totalRows to RAW AP1"]
-    D --> E["Set ScreenUpdating False"]
-    E --> F["Copy EMP CLOSED CHECK A3:L3"]
-    F --> G["Paste template to A4:L lastRow"]
-    G --> H["Files C6 = Successful"]
-    H --> I["End with ScreenUpdating still False"]
+    A["Start"] --> B["Count all RAW rows; write AP1"]
+    B --> C["Read and validate latest batch AP2:AP3"]
+    C --> D{"Does first batch begin at RAW row 2?"}
+    D -- "Yes" --> E["Skip RAW row 2; EMP row 3 already represents it"]
+    D -- "No" --> F["Use every row in the latest batch"]
+    E --> G{"Any template rows to append?"}
+    F --> G
+    G -- "Yes" --> H{"Does EMP append row map to RAW batch row plus 1?"}
+    G -- "No" --> I["No additional paste"]
+    H -- "Yes" --> K["Append A3:L3 template after last EMP column-B row"]
+    H -- "No" --> X["Files C6 = out-of-sync error"]
+    K --> J["Files C6 = Successful"]
+    I --> J
     A -. "Error" .-> X["Files C6 = error"]
-    X --> Y["Set DisplayAlerts from uninitialized variable"]
+    C -. "Invalid bounds" .-> X
 ```
 
 ### Side effects and risks
 
-- All `Sheets(...)` references are unqualified and resolve against the active
-  workbook, not necessarily `ThisWorkbook`.
-- `Application.ScreenUpdating` is disabled and never restored.
-- For zero or one RAW record, the target has reversed endpoints such as
-  `A4:L2` or `A4:L3`. Excel treats these as real rectangular ranges and may
-  overwrite unintended rows.
-- The error handler assigns an uninitialized `originalDisplayAlerts` variable
-  to `Application.DisplayAlerts`, which can leave alerts disabled.
-- Existing template rows beyond the new end are not cleared.
+- When rows are appended, `Application.ScreenUpdating` is disabled and never
+  restored. An initial one-row batch performs no EMP paste and does not change it.
+- Missing, nonnumeric, reversed, or out-of-range AP2/AP3 boundaries produce an
+  error status instead of pasting.
+- Before appending, the routine requires the next EMP row to equal the first RAW
+  row being processed plus one. This preserves relative formula mapping and
+  blocks duplicate reruns or desynchronized sheets.
+- On the first batch, existing template row 3 represents RAW row 2; only the
+  remaining batch rows are appended from row 4 onward.
 - Success or an error description is written to `Files!C6`.
 
 ## RunMacro2
@@ -449,7 +472,7 @@ The five category routines use the same general pattern:
 1. Filter `EMP CLOSED CHECK!A2:L[last row in B]` on field 4, source column D.
 2. Copy visible `B3:K[last row]`.
 3. Paste values and number formats into the category sheet.
-4. Fill target column A with yesterday's date as `mm/dd/yyyy`.
+4. Fill target column A with `Files!B28` formatted as `mm/dd/yyyy`.
 5. Copy a category-specific formula/template range to column L.
 6. Convert the target column-L cells to values.
 7. Remove the source filter and write a status.
@@ -485,7 +508,7 @@ flowchart TD
     D --> E{"Casino Drink B9 blank?"}
     E -- "Yes" --> F["Paste at B9"]
     E -- "No" --> G["Paste two rows after last used B row"]
-    F --> H["Fill new A rows with yesterday"]
+    F --> H["Fill new A rows from Files B28"]
     G --> H
     H --> I["Copy L5:O5 to destination in column L"]
     I --> J["Convert destination L cells to values"]
@@ -524,7 +547,7 @@ flowchart TD
     D --> E{"Target B11 blank?"}
     E -- "Yes" --> F["Paste at B11"]
     E -- "No" --> G["Paste two rows after last used B row"]
-    F --> H["Fill new A rows with yesterday"]
+    F --> H["Fill new A rows from Files B28"]
     G --> H
     H --> I["Copy L7:R7 to destination in column L"]
     I --> J["Convert destination L cells to values"]
@@ -559,7 +582,7 @@ flowchart TD
     D --> E{"Htl Amenity B11 blank?"}
     E -- "Yes" --> F["Paste at B11"]
     E -- "No" --> G["Paste two rows after last used B row"]
-    F --> H["Fill new A rows with yesterday"]
+    F --> H["Fill new A rows from Files B28"]
     G --> H
     H --> I["Copy L8:P8 to destination in column L"]
     I --> J["Convert destination L cells to values"]
@@ -594,7 +617,7 @@ flowchart TD
     D --> E{"Target B9 blank?"}
     E -- "Yes" --> F["Paste at B9"]
     E -- "No" --> G["Paste two rows after last used B row"]
-    F --> H["Fill new A rows with yesterday"]
+    F --> H["Fill new A rows from Files B28"]
     G --> H
     H --> I["Copy L6 down destination L rows"]
     I --> J["Convert destination L cells to values"]
@@ -634,7 +657,7 @@ flowchart TD
     E --> F{"OTHERS B9 blank?"}
     F -- "Yes" --> G["Paste at B9"]
     F -- "No" --> H["Paste two rows after last used B row"]
-    G --> I["Fill new A rows with yesterday"]
+    G --> I["Fill new A rows from Files B28"]
     H --> I
     I --> J["Copy L6:M6 to destination in column L"]
     J --> K["Convert destination L cells to values"]
@@ -663,42 +686,33 @@ flowchart TD
 
 ### Purpose
 
-Clears the four sheets used by the primary import pipeline while retaining cell
-formatting. Active filters are first changed to show all data.
+Clears `SFR (MTD)` while retaining cell formatting. It shows all filtered data
+on `MENU ITEM 2`, `RAW`, and `EMP CLOSED CHECK` without clearing those sheets.
 
-### Clear ranges
+### Actions
 
-| Sheet | Last-row basis | Cleared contents |
-|---|---|---|
-| `SFR (MTD)` | None | Entire columns A:B, including headers |
-| `MENU ITEM 2` | Column A | `A2:S[last row]` |
-| `RAW` | Column A | `A2:AO[last row]` |
-| `EMP CLOSED CHECK` | Column B | `A4:M[last row]` and `M3` |
+| Sheet | Action |
+|---|---|
+| `SFR (MTD)` | Show all data; clear entire columns A:B, including headers |
+| `MENU ITEM 2` | Show all data only; preserve accumulated rows |
+| `RAW` | Show all data only; preserve accumulated rows and AP metadata |
+| `EMP CLOSED CHECK` | Show all data only; preserve template and accumulated rows |
 
 ```mermaid
 flowchart TD
     A["Start ClearSEM"] --> B["Show all SFR data"]
     B --> C["Clear entire SFR columns A:B"]
     C --> D["Show all MENU ITEM 2 data"]
-    D --> E["Clear A2:S through last A row"]
-    E --> F["Show all RAW data"]
-    F --> G["Clear A2:AO through last A row"]
-    G --> H["Show all EMP CLOSED CHECK data"]
-    H --> I{"Last B row at least 4?"}
-    I -- "Yes" --> J["Clear A4:M-last and M3"]
-    I -- "No" --> K["End"]
-    J --> K
+    D --> E["Preserve Menu rows; show all RAW data"]
+    E --> F["Preserve RAW rows; show all EMP CLOSED CHECK data"]
+    F --> G["Preserve EMP rows; end"]
 ```
 
 ### Side effects and risks
 
-- The SFR selection and clear statements are unqualified. If another workbook is
-  active, the code can fail or clear a similarly named sheet in that workbook.
 - The entire SFR A:B columns are cleared, including row 1.
-- There is no error handler; an error leaves later sheets uncleared.
-- Last rows are based on only one key column, so lower data in other columns can
-  remain.
-- `RAW!AP1`, used by `CopyECCSheet`, is not cleared.
+- There is no error handler; an error can stop later unfilter operations.
+- Menu, RAW, and EMP data accumulate until another routine or a user removes it.
 
 ## Clear
 
@@ -707,47 +721,45 @@ flowchart TD
 
 ### Purpose
 
-Performs a broader reset than `ClearSEM`, clearing staging data plus all five
-category sheets. `ClearContents` removes values and formulas but preserves cell
-formats, validation, comments, and row/column sizes.
+Performs a broader reset than `ClearSEM`: it clears SFR and all five category
+sheets, but only unfilters `MENU ITEM 2`, `RAW`, and `EMP CLOSED CHECK` so their
+accumulated data remains. `ClearContents` preserves formats and validation.
 
-### Clear ranges
+### Actions
 
-| Sheet | Last-row basis | Cleared contents |
-|---|---|---|
-| `SFR (MTD)` | None | Entire columns A:B |
-| `MENU ITEM 2` | A | `A2:S[last row]` |
-| `RAW` | A | `A2:AO[last row]` |
-| `Casino Drink` | A | `A8:R[last row]` |
-| `Csino F&B COMP` | A | `A10:T[last row]` |
-| `Htl Amenity` | A | `A10:R[last row]` |
-| `COMP SPA PACKAGE` | A | `A8:N[last row]` |
-| `OTHERS` | A | `A8:N[last row]` |
-| `EMP CLOSED CHECK` | B | `A4:L[last row]` |
+| Sheet | Action |
+|---|---|
+| `SFR (MTD)` | Show all data; clear entire columns A:B |
+| `MENU ITEM 2` | Show all data only; preserve accumulated rows |
+| `RAW` | Show all data only; preserve accumulated rows and AP metadata |
+| `Casino Drink` | Clear `A8:R[last column-A row]` |
+| `Csino F&B COMP` | Clear `A10:T[last column-A row]` |
+| `Htl Amenity` | Clear `A10:R[last column-A row]` |
+| `COMP SPA PACKAGE` | Clear `A8:N[last column-A row]` |
+| `OTHERS` | Clear `A8:N[last column-A row]` |
+| `EMP CLOSED CHECK` | Show all data only; preserve template and accumulated rows |
 
 ```mermaid
 flowchart TD
     A["Start Clear"] --> B["Unfilter and clear SFR A:B"]
-    B --> C["Unfilter and clear MENU ITEM 2"]
-    C --> D["Unfilter and clear RAW"]
+    B --> C["Unfilter MENU ITEM 2; preserve rows"]
+    C --> D["Unfilter RAW; preserve rows"]
     D --> E["Unfilter and clear Casino Drink"]
     E --> F["Unfilter and clear Csino F&B COMP"]
     F --> G["Unfilter and clear Htl Amenity"]
     G --> H["Unfilter and clear COMP SPA PACKAGE"]
     H --> I["Unfilter and clear OTHERS"]
-    I --> J["Unfilter and clear EMP CLOSED CHECK"]
+    I --> J["Unfilter EMP CLOSED CHECK; preserve rows"]
     J --> K["End"]
 ```
 
 ### Side effects and risks
 
-- The SFR select/clear statements are unqualified and can address the active
-  workbook instead of `ThisWorkbook`.
 - There is no error handler or rollback. One error stops all later clearing.
 - Key-column last-row checks can leave stale cells below the detected boundary.
 - The filter criteria are cleared with `ShowAllData`, but filter arrows normally
   remain.
-- `RAW!AP1` is outside the clear range and remains unchanged.
+- Menu, RAW, and EMP data are intentionally not cleared by this routine.
 
 ## ThisWorkbook module
 
@@ -769,7 +781,8 @@ events such as `Workbook_Open`, `Workbook_BeforeClose`, or
 - External workbooks are not opened read-only, and events are not disabled.
 - Error handlers generally report an error but do not close open source
   workbooks, clear filters, undo partial output, or re-raise the error.
-- The import and category routines do not clear old destination data first.
+- Menu, RAW, and EMP imports retain old destination data by design. Reusing the
+  same source files appends duplicate records.
 - Many last-row calculations depend on one column and assume contiguous data.
 - Several comments in the VBA exports describe different cells or ranges from
   those actually used. This document follows the executable code.
@@ -781,13 +794,14 @@ dependencies:
 
 ```mermaid
 flowchart LR
-    A["1. Run Clear or ClearSEM"] --> B["2. Run RunMacro"]
+    A["1. Set processing date in Files B28"] --> B["2. Run RunMacro"]
     B --> C["3. Review Files C2:C6"]
     C --> D{"All import statuses successful?"}
-    D -- "Yes" --> E["4. Run RunMacro2"]
+    D -- "Yes" --> E["4. Optionally run Clear to reset category sheets"]
     D -- "No" --> F["Fix source/path issue before continuing"]
-    E --> G["5. Review Files C7:C11"]
+    E --> G["5. Run RunMacro2"]
+    G --> H["6. Review Files C7:C11"]
 ```
 
-This sequence is documentation only; no VBA code was changed to automate or
-enforce it.
+This sequence is documentation only; the VBA code does not automate or enforce
+it.

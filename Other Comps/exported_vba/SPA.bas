@@ -74,7 +74,7 @@ Sub CopySPSheet()
     End If
 
     ' Insert the SUM formula from A10 to the last filled row
-    targetSheet.Range("A" & emptyRow + 1 & ":A" & emptyRowF - 1).Value = Format(Date - 1, "mm/dd/yyyy")
+    targetSheet.Range("A" & emptyRow + 1 & ":A" & emptyRowF - 1).Value = Format(filesSheet.Range("B28").Value, "mm/dd/yyyy")
     targetSheet.Range("L6").Copy
     targetSheet.Range("L" & emptyRow + 1 & ":L" & emptyRowF - 1).PasteSpecial
     targetSheet.Range("L" & emptyRow + 1 & ":L" & emptyRowF - 1).Value = targetSheet.Range("L" & emptyRow + 1 & ":L" & emptyRowF - 1).Value
