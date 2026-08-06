@@ -108,35 +108,43 @@ All executable procedures are parameterless public `Sub` procedures. No VBA
 
 Runs the primary import pipeline in a fixed order. The order matters because
 `CopyRAWSheet` depends on `FILTER`, and `CopyECCSheet` depends on `RAW`.
+Before the imports begin, every worksheet in `ThisWorkbook` is unfiltered with
+`ShowAllData`. This reveals all rows while retaining AutoFilter dropdowns.
 
 ### Steps
 
 | Order | Call | Dependency/result |
 |---:|---|---|
-| 1 | `CopysfrSheet` | Imports the SFR source from `Files!B2` |
-| 2 | `CopyFilterSheet` | Builds `FILTER` from `Files!B5` |
-| 3 | `CopyMISheet` | Appends to `MENU ITEM 2` from `Files!B3` |
-| 4 | `CopyRAWSheet` | Uses `Files!B4` and `FILTER` to append to `RAW` |
-| 5 | `CopyECCSheet` | Appends the latest RAW batch to `EMP CLOSED CHECK` |
+| 1 | Preflight unfilter | Shows all rows on every `ThisWorkbook` worksheet |
+| 2 | `CopysfrSheet` | Imports the SFR source from `Files!B2` |
+| 3 | `CopyFilterSheet` | Builds `FILTER` from `Files!B5` |
+| 4 | `CopyMISheet` | Appends to `MENU ITEM 2` from `Files!B3` |
+| 5 | `CopyRAWSheet` | Uses `Files!B4` and `FILTER` to append to `RAW` |
+| 6 | `CopyECCSheet` | Appends the latest RAW batch to `EMP CLOSED CHECK` |
 
 ```mermaid
 flowchart TD
-    A["Start RunMacro"] --> B["CopysfrSheet"]
-    B --> C["CopyFilterSheet"]
-    C --> D["CopyMISheet"]
-    D --> E["CopyRAWSheet"]
-    E --> F["CopyECCSheet"]
-    F --> G["End"]
+    A["Start RunMacro"] --> B["Show all rows on every ThisWorkbook worksheet"]
+    B --> C["CopysfrSheet"]
+    C --> D["CopyFilterSheet"]
+    D --> E["CopyMISheet"]
+    E --> F["CopyRAWSheet"]
+    F --> G["CopyECCSheet"]
+    G --> H["End"]
     B -. "Unhandled error" .-> X["Stop remaining calls"]
     C -. "Unhandled error" .-> X
     D -. "Unhandled error" .-> X
     E -. "Unhandled error" .-> X
     F -. "Unhandled error" .-> X
+    G -. "Unhandled error" .-> X
 ```
 
 ### Notes and risks
 
 - The routine has no error handler and no combined success status.
+- The preflight removes active filter criteria but leaves filter dropdowns in
+  place. It only affects worksheets in `ThisWorkbook`, not external workbooks
+  opened later by child routines.
 - Most child routines catch errors, write an error status, and return. Therefore,
   this pipeline can continue using stale or partial data after a failed step.
 - Menu, RAW, and EMP imports append by design; rerunning the same sources creates
