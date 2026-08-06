@@ -1,3 +1,4 @@
+Attribute VB_Name = "EMP"
 Sub CopyECCSheet()
     On Error GoTo ErrorHandler
     Dim mainWorkbook As Workbook

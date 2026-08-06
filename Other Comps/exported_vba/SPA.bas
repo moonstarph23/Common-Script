@@ -1,3 +1,4 @@
+Attribute VB_Name = "SPA"
 Sub CopySPSheet()
     On Error GoTo ErrorHandler
     Dim mainWorkbook As Workbook

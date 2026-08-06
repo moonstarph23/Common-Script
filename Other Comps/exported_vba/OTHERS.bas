@@ -1,3 +1,4 @@
+Attribute VB_Name = "OTHERS"
 Sub CopyOTHERSheet()
     On Error GoTo ErrorHandler
     Dim mainWorkbook As Workbook

@@ -1,3 +1,4 @@
+Attribute VB_Name = "RAWSHEET"
 Sub CopyRAWSheet()
     On Error GoTo ErrorHandler
     Dim mainWorkbook As Workbook

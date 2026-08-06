@@ -1,3 +1,4 @@
+Attribute VB_Name = "MENUITEM"
 Sub CopyMISheet()
     On Error GoTo ErrorHandler
     Dim mainWorkbook As Workbook

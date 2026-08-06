@@ -1,3 +1,4 @@
+Attribute VB_Name = "FBCOMP"
 Sub CopyFBSheet()
     On Error GoTo ErrorHandler
     Dim mainWorkbook As Workbook
