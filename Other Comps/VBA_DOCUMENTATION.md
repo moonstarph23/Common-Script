@@ -63,8 +63,10 @@ flowchart LR
 
 ### Procedure inventory
 
-All executable procedures are parameterless public `Sub` procedures. No VBA
-`Function`, `Property`, or workbook event procedure is present.
+All executable procedures are public `Sub` procedures. `CopyRAWSheet` returns
+batch boundaries through `ByRef` parameters and `CopyECCSheet` receives them
+through `ByVal` parameters; both are called only by `RunMacro`. No VBA `Function`,
+`Property`, or workbook event procedure is present.
 
 | Module | Procedure | Main target | Status |
 |---|---|---|---|
@@ -162,7 +164,7 @@ flowchart TD
     B --> C["Show all rows on every workbook sheet"]
     C --> D["SFR and FILTER imports"]
     D --> E["Append MENU ITEM 2"]
-    E --> F["Append RAW and record batch"]
+    E --> F["Append RAW and return batch variables"]
     F --> G["Append EMP CLOSED CHECK"]
     G --> H["Copy Casino Drink"]
     H --> I["Copy F&B"]
@@ -361,7 +363,7 @@ flowchart TD
 ## CopyRAWSheet
 
 **Source:** `exported_vba/RAWSHEET.bas`<br>
-**Signature:** `Sub CopyRAWSheet()`
+**Signature:** `Sub CopyRAWSheet(ByRef batchFirstRow As Long, ByRef batchLastRow As Long)`
 
 ### Purpose
 
@@ -370,7 +372,7 @@ Transforms the external workbook in `Files!B4`, filters it using criteria from
 
 ### Transformation
 
-1. Reset `RAW!AP2:AP3` to zero so a failed import cannot reuse stale bounds.
+1. Initialize both output batch variables to zero.
 2. Open the source and use its first worksheet.
 3. Add a temporary worksheet named `NewSheetName`.
 4. Unmerge source columns A:AN.
@@ -381,7 +383,7 @@ Transforms the external workbook in `Files!B4`, filters it using criteria from
 9. Append those rows after the final populated RAW
    column-A row, with row 2 as the minimum destination.
 10. Fill column AO for the new rows from `Files!B28`.
-11. Record the successful batch boundaries in `RAW!AP2:AP3`.
+11. Return the successful first and last RAW rows through the `ByRef` variables.
 
 ### Criteria
 
@@ -392,8 +394,8 @@ and passes the array to AutoFilter with `xlFilterValues`.
 
 ```mermaid
 flowchart TD
-    A["Start"] --> B["Reset RAW AP2:AP3"]
-    B --> C["Read Files B4 and open source"]
+    A["Start; initialize output variables to zero"] --> B["Read Files B4"]
+    B --> C["Open source"]
     C --> D["Use first sheet; add NewSheetName"]
     D --> E["Unmerge source A:AN"]
     E --> F["Copy A6:AN through last V row to temp"]
@@ -403,7 +405,7 @@ flowchart TD
     I --> J["Append values and number formats"]
     J --> K["Close source without saving"]
     K --> L["Align A:AI; fill AO from Files B28"]
-    L --> M["Store batch bounds in AP2:AP3"]
+    L --> M["Return first/last batch rows by reference"]
     M --> N["Files C4 = Successful"]
     C -. "Error" .-> X["Files C4 = error; restore alerts"]
     D -. "Error" .-> X
@@ -424,31 +426,29 @@ flowchart TD
 - `Application.ScreenUpdating` is set to `False` and is not restored.
 - Existing RAW rows are retained, so importing the same source repeatedly
   appends duplicate records.
-- Column AO identifies each new row's processing date. AP2 and AP3 identify the
-  first and last rows of the latest appended batch.
-- AP2 and AP3 are reset to zero before import. If RAW import fails, the following
-  `CopyECCSheet` call rejects those invalid bounds instead of reusing an old batch.
+- Column AO identifies each new row's processing date. RAW column AP is unused.
+- Successful batch boundaries are returned directly to `RunMacro`. On error,
+  both output variables remain zero and `CopyECCSheet` rejects them.
 - On error, the handler attempts to close the modified source without saving.
 - Success or an error description is written to `Files!C4`.
 
 ## CopyECCSheet
 
 **Source:** `exported_vba/EMP.bas`<br>
-**Signature:** `Sub CopyECCSheet()`
+**Signature:** `Sub CopyECCSheet(ByVal rawFirstRow As Long, ByVal rawLastRow As Long)`
 
 ### Purpose
 
-Counts records in `RAW`, stores the total in `RAW!AP1`, and appends template rows
-to `EMP CLOSED CHECK` for only the latest RAW batch identified by `RAW!AP2:AP3`.
+Validates the batch boundaries supplied by `RunMacro` and appends template rows
+to `EMP CLOSED CHECK` for only that latest RAW batch.
 
 ### Calculations
 
 | Value | Calculation |
 |---|---|
 | `rowCount` | Last used row in `RAW` column A |
-| `totalRows` | `rowCount - 1`, written to `RAW!AP1` |
-| `rawFirstRow` | Latest RAW batch start from `RAW!AP2` |
-| `rawLastRow` | Latest RAW batch end from `RAW!AP3` |
+| `rawFirstRow` | Latest RAW batch start supplied by `RunMacro` |
+| `rawLastRow` | Latest RAW batch end supplied by `RunMacro` |
 | `firstTargetRow` | Row after the last populated EMP column-B row, minimum 4 |
 | Paste target | New rows in `EMP CLOSED CHECK!A:L` only |
 
@@ -456,8 +456,8 @@ to `EMP CLOSED CHECK` for only the latest RAW batch identified by `RAW!AP2:AP3`.
 
 ```mermaid
 flowchart TD
-    A["Start"] --> B["Count all RAW rows; write AP1"]
-    B --> C["Read and validate latest batch AP2:AP3"]
+    A["Start with first/last batch variables"] --> B["Find final RAW column-A row"]
+    B --> C["Validate supplied batch variables"]
     C --> D{"Does first batch begin at RAW row 2?"}
     D -- "Yes" --> E["Skip RAW row 2; EMP row 3 already represents it"]
     D -- "No" --> F["Use every row in the latest batch"]
@@ -477,8 +477,8 @@ flowchart TD
 
 - When rows are appended, `Application.ScreenUpdating` is disabled and never
   restored. An initial one-row batch performs no EMP paste and does not change it.
-- Missing, nonnumeric, reversed, or out-of-range AP2/AP3 boundaries produce an
-  error status instead of pasting.
+- Zero, reversed, or out-of-range batch variables produce an error status instead
+  of pasting.
 - Before appending, the routine requires the next EMP row to equal the first RAW
   row being processed plus one. This preserves relative formula mapping and
   blocks duplicate reruns or desynchronized sheets.
@@ -717,7 +717,7 @@ on `MENU ITEM 2`, `RAW`, and `EMP CLOSED CHECK` without clearing those sheets.
 |---|---|
 | `SFR (MTD)` | Show all data; clear entire columns A:B, including headers |
 | `MENU ITEM 2` | Show all data only; preserve accumulated rows |
-| `RAW` | Show all data only; preserve accumulated rows and AP metadata |
+| `RAW` | Show all data only; preserve accumulated rows |
 | `EMP CLOSED CHECK` | Show all data only; preserve template and accumulated rows |
 
 ```mermaid
@@ -753,7 +753,7 @@ accumulated data remains. `ClearContents` preserves formats and validation.
 |---|---|
 | `SFR (MTD)` | Show all data; clear entire columns A:B |
 | `MENU ITEM 2` | Show all data only; preserve accumulated rows |
-| `RAW` | Show all data only; preserve accumulated rows and AP metadata |
+| `RAW` | Show all data only; preserve accumulated rows |
 | `Casino Drink` | Clear `A8:R[last column-A row]` |
 | `Csino F&B COMP` | Clear `A10:T[last column-A row]` |
 | `Htl Amenity` | Clear `A10:R[last column-A row]` |

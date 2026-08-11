@@ -53,7 +53,7 @@ Dim Rng As Range
     Next i
 sourceSheet.Range("A2:L" & lastSourceRow).AutoFilter Field:=4, Criteria1:=criteria, Operator:=xlFilterValues
 
- ' Copy the data from columns AP to AV, including values and formats'
+ ' Copy visible values and formats from columns B to K.
     sourceSheet.Range("B3:K" & lastSourceRow).SpecialCells(xlCellTypeVisible).Copy
 
     ' Find the first empty row starting from A9

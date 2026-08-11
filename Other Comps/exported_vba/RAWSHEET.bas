@@ -1,5 +1,5 @@
 Attribute VB_Name = "RAWSHEET"
-Sub CopyRAWSheet()
+Sub CopyRAWSheet(ByRef batchFirstRow As Long, ByRef batchLastRow As Long)
     On Error GoTo ErrorHandler
     Dim mainWorkbook As Workbook
     Dim sourceWorkbook As Workbook
@@ -20,6 +20,9 @@ Sub CopyRAWSheet()
     Dim visibleData As Range
     Dim errorMessage As String
 
+    batchFirstRow = 0
+    batchLastRow = 0
+
     ' Save the current state of DisplayAlerts
     originalDisplayAlerts = Application.DisplayAlerts
 
@@ -31,7 +34,6 @@ Sub CopyRAWSheet()
     Set filesSheet = mainWorkbook.Sheets("Files") ' Set Files sheet
     Set targetSheet = mainWorkbook.Sheets("RAW") ' Change Cover to your target sheet name
     Set wsCriteria = mainWorkbook.Sheets("FILTER")
-    targetSheet.Range("AP2:AP3").Value = 0
 
     ' Get the source file path from Files sheet cell B5
     sourceFilePath = filesSheet.Range("B4").Value
@@ -128,8 +130,8 @@ Set Rng = NewSheet.Range("A2:AI" & lastSourceRowN).CurrentRegion
     lastTargetRow = firstTargetRow + importedRows - 1
     targetSheet.Range("AO" & firstTargetRow & ":AO" & lastTargetRow).Value = _
         Format(filesSheet.Range("B28").Value, "mm/dd/yyyy")
-    targetSheet.Range("AP2").Value = firstTargetRow
-    targetSheet.Range("AP3").Value = lastTargetRow
+    batchFirstRow = firstTargetRow
+    batchLastRow = lastTargetRow
     targetSheet.Activate
     Range("A1").Select
 
@@ -138,6 +140,8 @@ Set Rng = NewSheet.Range("A2:AI" & lastSourceRowN).CurrentRegion
     Exit Sub
 ErrorHandler:
     errorMessage = Err.Description
+    batchFirstRow = 0
+    batchLastRow = 0
     On Error Resume Next
     filesSheet.Range("C4").Value = "Error: " & errorMessage
     Application.DisplayAlerts = originalDisplayAlerts

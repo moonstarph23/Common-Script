@@ -1,14 +1,11 @@
 Attribute VB_Name = "EMP"
-Sub CopyECCSheet()
+Sub CopyECCSheet(ByVal rawFirstRow As Long, ByVal rawLastRow As Long)
     On Error GoTo ErrorHandler
     Dim mainWorkbook As Workbook
     Dim rawSheet As Worksheet
     Dim targetSheet As Worksheet
     Dim filesSheet As Worksheet
     Dim rowCount As Long
-    Dim totalRows As Long
-    Dim rawFirstRow As Long
-    Dim rawLastRow As Long
     Dim firstRawRowToAppend As Long
     Dim batchRows As Long
     Dim firstTargetRow As Long
@@ -22,21 +19,9 @@ Sub CopyECCSheet()
     Set targetSheet = mainWorkbook.Sheets("EMP CLOSED CHECK")
 
     rowCount = rawSheet.Cells(rawSheet.Rows.Count, "A").End(xlUp).Row
-    totalRows = rowCount - 1
-    If totalRows < 0 Then totalRows = 0
-    rawSheet.Range("AP1").Value = totalRows
-
-    If Not IsNumeric(rawSheet.Range("AP2").Value) Or _
-            Not IsNumeric(rawSheet.Range("AP3").Value) Then
-        Err.Raise vbObjectError + 1001, "CopyECCSheet", _
-            "Latest RAW batch boundaries are missing."
-    End If
-
-    rawFirstRow = CLng(rawSheet.Range("AP2").Value)
-    rawLastRow = CLng(rawSheet.Range("AP3").Value)
     If rawFirstRow < 2 Or rawLastRow < rawFirstRow Or rawLastRow > rowCount Then
-        Err.Raise vbObjectError + 1002, "CopyECCSheet", _
-            "Latest RAW batch boundaries are invalid."
+        Err.Raise vbObjectError + 1001, "CopyECCSheet", _
+            "Latest RAW batch variables are invalid."
     End If
 
     ' Row 3 is the template and already represents RAW row 2 on the first batch.

@@ -1,6 +1,8 @@
 Attribute VB_Name = "RUN"
 Sub RunMacro()
     Dim ws As Worksheet
+    Dim rawBatchFirstRow As Long
+    Dim rawBatchLastRow As Long
 
     Call ClearSEM
 
@@ -13,8 +15,8 @@ Sub RunMacro()
     Call CopysfrSheet
     Call CopyFilterSheet
     Call CopyMISheet
-    Call CopyRAWSheet
-    Call CopyECCSheet
+    Call CopyRAWSheet(rawBatchFirstRow, rawBatchLastRow)
+    Call CopyECCSheet(rawBatchFirstRow, rawBatchLastRow)
     Call CopyCDSheet
     Call CopyFBSheet
     Call CopyHASheet

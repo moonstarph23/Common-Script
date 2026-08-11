@@ -43,7 +43,7 @@ Sub CopyFBSheet()
 
     'Rng.AutoFilter Field:=44, Criteria1:="*HH*", Operator:=xlOr, Criteria2:="*PF*"
 
-    ' Copy the data from columns AP to AV, including values and formats'
+    ' Copy visible values and formats from columns B to K.
     sourceSheet.Range("B3:K" & lastSourceRow).SpecialCells(xlCellTypeVisible).Copy
 
     ' Find the first empty row starting from A9
