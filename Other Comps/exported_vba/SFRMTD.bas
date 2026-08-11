@@ -13,6 +13,7 @@ Sub CopysfrSheet()
     Dim deptRevRow As Long
     Dim deptRevTotalRow As Long
     Dim originalDisplayAlerts As Boolean
+    Dim errorMessage As String
 
     ' Save the current state of DisplayAlerts
     originalDisplayAlerts = Application.DisplayAlerts
@@ -22,8 +23,8 @@ Sub CopysfrSheet()
 
     ' Set the main workbook and target sheet
     Set mainWorkbook = ThisWorkbook
-    Set targetSheet = mainWorkbook.Sheets("SFR (MTD)") ' Change Cover to your target sheet name
     Set filesSheet = mainWorkbook.Sheets("Files") ' Set Files sheet
+    Set targetSheet = mainWorkbook.Sheets("SFR (MTD)") ' Change Cover to your target sheet name
 
     ' Get the source file path from Files sheet cell B5
     sourceFilePath = filesSheet.Range("B2").Value
@@ -68,10 +69,10 @@ Sub CopysfrSheet()
     filesSheet.Range("C2").Value = "Successful"
     Exit Sub
 ErrorHandler:
-
-    ' If there is an error, write the error message in Files sheet cell B3
-    filesSheet.Range("C2").Value = "Error: " & Err.Description
+    errorMessage = Err.Description
+    On Error Resume Next
+    filesSheet.Range("C2").Value = "Error: " & errorMessage
     Application.DisplayAlerts = originalDisplayAlerts
-
-    'MsgBox "Error: " & Err.Description
+    Application.CutCopyMode = False
+    If Not sourceWorkbook Is Nothing Then sourceWorkbook.Close SaveChanges:=False
 End Sub

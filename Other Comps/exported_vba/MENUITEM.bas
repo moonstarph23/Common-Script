@@ -18,6 +18,7 @@ Sub CopyMISheet()
     Dim importedRows As Long
     Dim visibleArea As Range
     Dim visibleData As Range
+    Dim errorMessage As String
 
     ' Save the current state of DisplayAlerts
     originalDisplayAlerts = Application.DisplayAlerts
@@ -27,8 +28,8 @@ Sub CopyMISheet()
 
     ' Set the main workbook and target sheet
     Set mainWorkbook = ThisWorkbook
-    Set targetSheet = mainWorkbook.Sheets("MENU ITEM 2") ' Change Cover to your target sheet name
     Set filesSheet = mainWorkbook.Sheets("Files") ' Set Files sheet
+    Set targetSheet = mainWorkbook.Sheets("MENU ITEM 2") ' Change Cover to your target sheet name
 
     ' Get the source file path from Files sheet cell B5
     sourceFilePath = filesSheet.Range("B3").Value
@@ -136,10 +137,10 @@ Sub CopyMISheet()
     filesSheet.Range("C3").Value = "Successful"
     Exit Sub
 ErrorHandler:
-
-    ' If there is an error, write the error message in Files sheet cell B3
-    filesSheet.Range("C3").Value = "Error: " & Err.Description
+    errorMessage = Err.Description
+    On Error Resume Next
+    filesSheet.Range("C3").Value = "Error: " & errorMessage
     Application.DisplayAlerts = originalDisplayAlerts
-
-    'MsgBox "Error: " & Err.Description
+    Application.CutCopyMode = False
+    If Not sourceWorkbook Is Nothing Then sourceWorkbook.Close SaveChanges:=False
 End Sub

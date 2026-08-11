@@ -18,6 +18,7 @@ Sub CopyRAWSheet()
     Dim importedRows As Long
     Dim visibleArea As Range
     Dim visibleData As Range
+    Dim errorMessage As String
 
     ' Save the current state of DisplayAlerts
     originalDisplayAlerts = Application.DisplayAlerts
@@ -27,8 +28,8 @@ Sub CopyRAWSheet()
 
     ' Set the main workbook and target sheet
     Set mainWorkbook = ThisWorkbook
-    Set targetSheet = mainWorkbook.Sheets("RAW") ' Change Cover to your target sheet name
     Set filesSheet = mainWorkbook.Sheets("Files") ' Set Files sheet
+    Set targetSheet = mainWorkbook.Sheets("RAW") ' Change Cover to your target sheet name
     Set wsCriteria = mainWorkbook.Sheets("FILTER")
     targetSheet.Range("AP2:AP3").Value = 0
 
@@ -136,10 +137,10 @@ Set Rng = NewSheet.Range("A2:AI" & lastSourceRowN).CurrentRegion
     filesSheet.Range("C4").Value = "Successful"
     Exit Sub
 ErrorHandler:
-
-    ' If there is an error, write the error message in Files sheet cell B3
-    filesSheet.Range("C4").Value = "Error: " & Err.Description
+    errorMessage = Err.Description
+    On Error Resume Next
+    filesSheet.Range("C4").Value = "Error: " & errorMessage
     Application.DisplayAlerts = originalDisplayAlerts
-
-    'MsgBox "Error: " & Err.Description
+    Application.CutCopyMode = False
+    If Not sourceWorkbook Is Nothing Then sourceWorkbook.Close SaveChanges:=False
 End Sub

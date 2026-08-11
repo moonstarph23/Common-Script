@@ -14,11 +14,12 @@ Sub CopyECCSheet()
     Dim firstTargetRow As Long
     Dim lastTargetRow As Long
     Dim expectedTargetRow As Long
+    Dim errorMessage As String
 
     Set mainWorkbook = ThisWorkbook
+    Set filesSheet = mainWorkbook.Sheets("Files")
     Set rawSheet = mainWorkbook.Sheets("RAW")
     Set targetSheet = mainWorkbook.Sheets("EMP CLOSED CHECK")
-    Set filesSheet = mainWorkbook.Sheets("Files")
 
     rowCount = rawSheet.Cells(rawSheet.Rows.Count, "A").End(xlUp).Row
     totalRows = rowCount - 1
@@ -62,6 +63,8 @@ Sub CopyECCSheet()
     filesSheet.Range("C6").Value = "Successful"
     Exit Sub
 ErrorHandler:
-    filesSheet.Range("C6").Value = "Error: " & Err.Description
+    errorMessage = Err.Description
+    On Error Resume Next
+    filesSheet.Range("C6").Value = "Error: " & errorMessage
     Application.CutCopyMode = False
 End Sub

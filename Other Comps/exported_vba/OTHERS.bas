@@ -13,6 +13,7 @@ Sub CopyOTHERSheet()
     Dim deptRevRow As Long
     Dim deptRevTotalRow As Long
     Dim originalDisplayAlerts As Boolean
+    Dim errorMessage As String
 
     ' Save the current state of DisplayAlerts
     originalDisplayAlerts = Application.DisplayAlerts
@@ -22,9 +23,9 @@ Sub CopyOTHERSheet()
 
     ' Set the main workbook and target sheet
     Set mainWorkbook = ThisWorkbook
+    Set filesSheet = mainWorkbook.Sheets("Files") ' Set Files sheet
     Set targetSheet = mainWorkbook.Sheets("OTHERS") ' Change Cover to your target sheet name
     Set sourceSheet = mainWorkbook.Sheets("EMP CLOSED CHECK") ' Change if the data is not on the first sheet
-    Set filesSheet = mainWorkbook.Sheets("Files") ' Set Files sheet
     Set wsCriteria = mainWorkbook.Sheets("FILTER")
 
     ' Determine the last row with data in column A of the source sheet'
@@ -90,11 +91,9 @@ sourceSheet.Range("A2:L" & lastSourceRow).AutoFilter Field:=4, Criteria1:=criter
     targetSheet.Range("L" & emptyRow + 1 & ":L" & emptyRowF - 1).PasteSpecial
     targetSheet.Range("L" & emptyRow + 1 & ":L" & emptyRowF - 1).Value = targetSheet.Range("L" & emptyRow + 1 & ":L" & emptyRowF - 1).Value
     Application.CutCopyMode = False
-    On Error Resume Next
 
                     ' Clear any existing filters'
     If sourceSheet.AutoFilterMode Then sourceSheet.AutoFilterMode = False
-            On Error GoTo 0
 
     ' Optional: Clear the clipboard
     Application.CutCopyMode = False
@@ -103,10 +102,12 @@ sourceSheet.Range("A2:L" & lastSourceRow).AutoFilter Field:=4, Criteria1:=criter
     filesSheet.Range("C11").Value = "Successful"
     Exit Sub
 ErrorHandler:
-
-    ' If there is an error, write the error message in Files sheet cell B3
-    filesSheet.Range("C11").Value = "Error: " & Err.Description
+    errorMessage = Err.Description
+    On Error Resume Next
+    filesSheet.Range("C11").Value = "Error: " & errorMessage
     Application.DisplayAlerts = originalDisplayAlerts
-
-    'MsgBox "Error: " & Err.Description
+    Application.CutCopyMode = False
+    If Not sourceSheet Is Nothing Then
+        If sourceSheet.AutoFilterMode Then sourceSheet.AutoFilterMode = False
+    End If
 End Sub

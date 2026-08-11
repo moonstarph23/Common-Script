@@ -68,7 +68,7 @@ All executable procedures are parameterless public `Sub` procedures. No VBA
 
 | Module | Procedure | Main target | Status |
 |---|---|---|---|
-| `RUN.bas` | `RunMacro` | Complete processing pipeline | `Files!C2:C11` |
+| `RUN.bas` | `RunMacro` | Complete processing pipeline | Child statuses in `Files!C2:C11` |
 | `SFRMTD.bas` | `CopysfrSheet` | `SFR (MTD)` | `Files!C2` |
 | `FILTERS.bas` | `CopyFilterSheet` | `FILTER` | `Files!C5` |
 | `MENUITEM.bas` | `CopyMISheet` | `MENU ITEM 2` | `Files!C3` |
@@ -93,6 +93,38 @@ All executable procedures are parameterless public `Sub` procedures. No VBA
 | `Files!B5` | Source workbook path used by `CopyFilterSheet` |
 | `Files!B28` | Processing date written to imported and category records |
 | `Files!C2:C11` | Success or error messages for individual routines |
+
+### Status and error handling
+
+The ten import and category routines report independently in `Files!C2:C11`.
+Each writes `Successful` on normal completion or `Error: <description>` from its
+error handler. `ClearSEM` and `RunMacro` intentionally have no status cells.
+
+| Status | Procedure |
+|---|---|
+| `Files!C2` | `CopysfrSheet` |
+| `Files!C3` | `CopyMISheet` |
+| `Files!C4` | `CopyRAWSheet` |
+| `Files!C5` | `CopyFilterSheet` |
+| `Files!C6` | `CopyECCSheet` |
+| `Files!C7` | `CopyCDSheet` |
+| `Files!C8` | `CopyFBSheet` |
+| `Files!C9` | `CopyHASheet` |
+| `Files!C10` | `CopySPSheet` |
+| `Files!C11` | `CopyOTHERSheet` |
+
+Each reporting routine resolves the `Files` sheet before its other workbook
+sheets. Error handlers preserve the original error description, attempt the
+column-C write first, and perform cleanup under `On Error Resume Next` so cleanup
+failures do not terminate `RunMacro`. External source workbooks are closed and
+category source filters are removed when possible. A missing, protected, or
+unwritable `Files` sheet cannot receive a status.
+
+Because `ClearSEM` and the all-sheet preflight are intentionally unreported, an
+error in either can stop `RunMacro` before some workers run. In that case, cells
+for workers that were not invoked retain their previous values. Dashed error
+paths in the `RunMacro` diagram represent errors that escape a child handler;
+ordinary handled worker errors write their status and return to the pipeline.
 
 ## RunMacro
 
@@ -207,7 +239,7 @@ flowchart TD
 
 - The source sheet's `A:Q` range is unmerged and unwrapped in memory. These
   changes are discarded on a normal close with `SaveChanges:=False`.
-- An error after opening can leave the source workbook open with unsaved changes.
+- On error, the handler attempts to close the source workbook without saving.
 - Existing target rows below a shorter new import are not cleared.
 - Source column A controls the last row for both imported columns.
 - The first source worksheet is selected by position, not by name.
@@ -247,7 +279,7 @@ flowchart TD
 - Source formulas are converted to values.
 - Existing `FILTER` rows below the imported range are not cleared.
 - Source column A determines the last row; lower data in B or C is ignored.
-- An error after opening can leave the source workbook open.
+- On error, the handler attempts to close the source workbook without saving.
 - The routine changes entire destination columns A:B to left alignment.
 - Success or an error description is written to `Files!C5`.
 
@@ -314,8 +346,8 @@ flowchart TD
 
 ### Side effects and risks
 
-- The original source sheet is unmerged in memory. The temporary sheet and all
-  source changes are discarded only when the normal close is reached.
+- The original source sheet is unmerged in memory. On success or handled error,
+  the source is closed without saving so temporary changes are discarded.
 - A pre-existing source sheet named `NewSheetName` causes a naming error.
 - If no visible rows exist, the routine reports an error instead of attempting a
   paste or using old clipboard data.
@@ -324,7 +356,7 @@ flowchart TD
 - Existing target rows are retained, so importing the same source repeatedly
   appends duplicate records.
 - Column S formulas and column T dates are limited to the current appended batch.
-- Success or an error description is intended for `Files!C3`.
+- Success or an error description is written to `Files!C3`.
 
 ## CopyRAWSheet
 
@@ -396,8 +428,7 @@ flowchart TD
   first and last rows of the latest appended batch.
 - AP2 and AP3 are reset to zero before import. If RAW import fails, the following
   `CopyECCSheet` call rejects those invalid bounds instead of reusing an old batch.
-- On error, the source can remain open after being unmerged and modified in
-  memory.
+- On error, the handler attempts to close the modified source without saving.
 - Success or an error description is written to `Files!C4`.
 
 ## CopyECCSheet
@@ -770,8 +801,8 @@ events such as `Workbook_Open`, `Workbook_BeforeClose`, or
 - Several procedures change application-wide settings such as `DisplayAlerts`
   and `ScreenUpdating`. Some paths do not restore those settings.
 - External workbooks are not opened read-only, and events are not disabled.
-- Error handlers generally report an error but do not close open source
-  workbooks, clear filters, undo partial output, or re-raise the error.
+- Error handlers report to `Files!C2:C11` and attempt source/filter cleanup, but
+  they do not roll back partial output or re-raise handled errors.
 - Menu, RAW, and EMP imports retain old destination data by design. Reusing the
   same source files appends duplicate records.
 - Many last-row calculations depend on one column and assume contiguous data.
