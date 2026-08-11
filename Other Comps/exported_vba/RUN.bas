@@ -2,6 +2,8 @@ Attribute VB_Name = "RUN"
 Sub RunMacro()
     Dim ws As Worksheet
 
+    Call ClearSEM
+
     For Each ws In ThisWorkbook.Worksheets
         If ws.FilterMode Then
             ws.ShowAllData
@@ -13,4 +15,9 @@ Sub RunMacro()
     Call CopyMISheet
     Call CopyRAWSheet
     Call CopyECCSheet
+    Call CopyCDSheet
+    Call CopyFBSheet
+    Call CopyHASheet
+    Call CopySPSheet
+    Call CopyOTHERSheet
 End Sub

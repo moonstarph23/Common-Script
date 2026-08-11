@@ -17,7 +17,6 @@ and other Mermaid-compatible Markdown viewers render them as flowcharts.
 - [CopyMISheet](#copymisheet)
 - [CopyRAWSheet](#copyrawsheet)
 - [CopyECCSheet](#copyeccsheet)
-- [RunMacro2](#runmacro2)
 - [CopyCDSheet](#copycdsheet)
 - [CopyFBSheet](#copyfbsheet)
 - [CopyHASheet](#copyhasheet)
@@ -30,13 +29,10 @@ and other Mermaid-compatible Markdown viewers render them as flowcharts.
 
 ## System overview
 
-The project has two main processing pipelines:
-
-1. `RunMacro` imports four external files and builds `EMP CLOSED CHECK`.
-2. `RunMacro2` divides records from `EMP CLOSED CHECK` among five category
-   sheets.
-
-The clear macros are separate. Neither run macro clears old data automatically.
+`RunMacro` is the single processing entry point. It runs `ClearSEM`, removes
+active filters from every workbook sheet, imports the external data, builds
+`EMP CLOSED CHECK`, and then populates all five category sheets. The broader
+`Clear` macro remains available as a separate manual reset.
 
 ```mermaid
 flowchart LR
@@ -72,13 +68,12 @@ All executable procedures are parameterless public `Sub` procedures. No VBA
 
 | Module | Procedure | Main target | Status |
 |---|---|---|---|
-| `RUN.bas` | `RunMacro` | Import pipeline | Child status cells |
+| `RUN.bas` | `RunMacro` | Complete processing pipeline | `Files!C2:C11` |
 | `SFRMTD.bas` | `CopysfrSheet` | `SFR (MTD)` | `Files!C2` |
 | `FILTERS.bas` | `CopyFilterSheet` | `FILTER` | `Files!C5` |
 | `MENUITEM.bas` | `CopyMISheet` | `MENU ITEM 2` | `Files!C3` |
 | `RAWSHEET.bas` | `CopyRAWSheet` | `RAW` | `Files!C4` |
 | `EMP.bas` | `CopyECCSheet` | `EMP CLOSED CHECK` | `Files!C6` |
-| `RUNN.bas` | `RunMacro2` | Category pipeline | Child status cells |
 | `CASINODRINK.bas` | `CopyCDSheet` | `Casino Drink` | `Files!C7` |
 | `FBCOMP.bas` | `CopyFBSheet` | `Csino F&B COMP` | `Files!C8` |
 | `AMENITY.bas` | `CopyHASheet` | `Htl Amenity` | `Files!C9` |
@@ -106,47 +101,66 @@ All executable procedures are parameterless public `Sub` procedures. No VBA
 
 ### Purpose
 
-Runs the primary import pipeline in a fixed order. The order matters because
-`CopyRAWSheet` depends on `FILTER`, and `CopyECCSheet` depends on `RAW`.
-Before the imports begin, every worksheet in `ThisWorkbook` is unfiltered with
-`ShowAllData`. This reveals all rows while retaining AutoFilter dropdowns.
+Runs the complete processing pipeline in a fixed order. It first calls
+`ClearSEM`, then unfilters every worksheet in `ThisWorkbook`, imports the source
+data, builds `EMP CLOSED CHECK`, and directly calls all five category routines.
+The order matters because `CopyRAWSheet` depends on `FILTER`, the EMP routine
+depends on `RAW`, and category routines depend on `EMP CLOSED CHECK`.
 
 ### Steps
 
 | Order | Call | Dependency/result |
 |---:|---|---|
-| 1 | Preflight unfilter | Shows all rows on every `ThisWorkbook` worksheet |
-| 2 | `CopysfrSheet` | Imports the SFR source from `Files!B2` |
-| 3 | `CopyFilterSheet` | Builds `FILTER` from `Files!B5` |
-| 4 | `CopyMISheet` | Appends to `MENU ITEM 2` from `Files!B3` |
-| 5 | `CopyRAWSheet` | Uses `Files!B4` and `FILTER` to append to `RAW` |
-| 6 | `CopyECCSheet` | Appends the latest RAW batch to `EMP CLOSED CHECK` |
+| 1 | `ClearSEM` | Clears SFR and unfilters the accumulating staging sheets |
+| 2 | Preflight unfilter | Shows all rows on every `ThisWorkbook` worksheet |
+| 3 | `CopysfrSheet` | Imports the SFR source from `Files!B2` |
+| 4 | `CopyFilterSheet` | Builds `FILTER` from `Files!B5` |
+| 5 | `CopyMISheet` | Appends to `MENU ITEM 2` from `Files!B3` |
+| 6 | `CopyRAWSheet` | Uses `Files!B4` and `FILTER` to append to `RAW` |
+| 7 | `CopyECCSheet` | Appends the latest RAW batch to `EMP CLOSED CHECK` |
+| 8 | `CopyCDSheet` | Populates `Casino Drink` |
+| 9 | `CopyFBSheet` | Populates `Csino F&B COMP` |
+| 10 | `CopyHASheet` | Populates `Htl Amenity` |
+| 11 | `CopySPSheet` | Populates `COMP SPA PACKAGE` |
+| 12 | `CopyOTHERSheet` | Populates `OTHERS` |
 
 ```mermaid
 flowchart TD
-    A["Start RunMacro"] --> B["Show all rows on every ThisWorkbook worksheet"]
-    B --> C["CopysfrSheet"]
-    C --> D["CopyFilterSheet"]
-    D --> E["CopyMISheet"]
-    E --> F["CopyRAWSheet"]
-    F --> G["CopyECCSheet"]
-    G --> H["End"]
+    A["Start RunMacro"] --> B["ClearSEM"]
+    B --> C["Show all rows on every workbook sheet"]
+    C --> D["SFR and FILTER imports"]
+    D --> E["Append MENU ITEM 2"]
+    E --> F["Append RAW and record batch"]
+    F --> G["Append EMP CLOSED CHECK"]
+    G --> H["Copy Casino Drink"]
+    H --> I["Copy F&B"]
+    I --> J["Copy Hotel Amenity"]
+    J --> K["Copy Spa"]
+    K --> L["Copy Others"]
+    L --> M["End"]
     B -. "Unhandled error" .-> X["Stop remaining calls"]
     C -. "Unhandled error" .-> X
     D -. "Unhandled error" .-> X
     E -. "Unhandled error" .-> X
     F -. "Unhandled error" .-> X
     G -. "Unhandled error" .-> X
+    H -. "Unhandled error" .-> X
+    I -. "Unhandled error" .-> X
+    J -. "Unhandled error" .-> X
+    K -. "Unhandled error" .-> X
+    L -. "Unhandled error" .-> X
 ```
 
 ### Notes and risks
 
 - The routine has no error handler and no combined success status.
+- It always invokes the category routines after the import calls return; it does
+  not inspect `Files!C2:C6` before continuing.
 - The preflight removes active filter criteria but leaves filter dropdowns in
   place. It only affects worksheets in `ThisWorkbook`, not external workbooks
   opened later by child routines.
 - Most child routines catch errors, write an error status, and return. Therefore,
-  this pipeline can continue using stale or partial data after a failed step.
+  the pipeline can continue using stale or partial data after a failed step.
 - Menu, RAW, and EMP imports append by design; rerunning the same sources creates
   duplicate accumulated records.
 - There is no rollback. Earlier successful imports remain if a later step fails.
@@ -441,41 +455,10 @@ flowchart TD
   remaining batch rows are appended from row 4 onward.
 - Success or an error description is written to `Files!C6`.
 
-## RunMacro2
-
-**Source:** `exported_vba/RUNN.bas`<br>
-**Signature:** `Sub RunMacro2()`
-
-### Purpose
-
-Runs the five category-copy routines in order. It does not import the raw data
-or build `EMP CLOSED CHECK`; that work belongs to `RunMacro`.
-
-```mermaid
-flowchart TD
-    A["Start RunMacro2"] --> B["CopyCDSheet"]
-    B --> C["CopyFBSheet"]
-    C --> D["CopyHASheet"]
-    D --> E["CopySPSheet"]
-    E --> F["CopyOTHERSheet"]
-    F --> G["End"]
-    B -. "Unhandled error" .-> X["Stop remaining calls"]
-    C -. "Unhandled error" .-> X
-    D -. "Unhandled error" .-> X
-    E -. "Unhandled error" .-> X
-    F -. "Unhandled error" .-> X
-```
-
-### Notes and risks
-
-- The routine has no aggregate status and does not inspect child status cells.
-- A handled child error normally allows the next child to run.
-- Repeated runs can append duplicate category records.
-- The final child, `CopyOTHERSheet`, leaves screen updating disabled.
-
 ## Category routines
 
-The five category routines use the same general pattern:
+`RunMacro` calls the five category routines directly in the order shown below.
+They use the same general pattern:
 
 1. Filter `EMP CLOSED CHECK!A2:L[last row in B]` on field 4, source column D.
 2. Copy visible `B3:K[last row]`.
@@ -797,19 +780,17 @@ events such as `Workbook_Open`, `Workbook_BeforeClose`, or
 
 ### Recommended operating order
 
-The existing code does not enforce this order, but it best matches its data
-dependencies:
+Use this operating sequence; `RunMacro` enforces the internal processing order:
 
 ```mermaid
 flowchart LR
     A["1. Set processing date in Files B28"] --> B["2. Run RunMacro"]
-    B --> C["3. Review Files C2:C6"]
-    C --> D{"All import statuses successful?"}
-    D -- "Yes" --> E["4. Optionally run Clear to reset category sheets"]
-    D -- "No" --> F["Fix source/path issue before continuing"]
-    E --> G["5. Run RunMacro2"]
-    G --> H["6. Review Files C7:C11"]
+    B --> C["3. Review Files C2:C11"]
+    C --> D{"Any error statuses?"}
+    D -- "Yes" --> E["Fix the source, path, or workbook issue"]
+    D -- "No" --> F["Processing complete"]
 ```
 
-This sequence is documentation only; the VBA code does not automate or enforce
-it.
+`RunMacro` performs the complete workflow but does not stop on handled child
+errors. The standalone `Clear` macro remains available when a broader manual
+category reset is required.
