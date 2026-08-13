@@ -14,9 +14,10 @@ def wait_for_opera_print_pdf(timeout: int, move_to_path: str = None) -> tuple:
         %LOCALAPPDATA%\\Microsoft\\Windows\\INetCache\\**\\OperaPrint*.pdf
 
     "Fully downloaded" means:
-        1. File exists and size > 0
-        2. Size unchanged between two stats 2 seconds apart
-        3. File is not locked by another process (os.open O_RDWR succeeds)
+        1. File was created after this function started
+        2. File exists and size > 0
+        3. Size unchanged between two stats 2 seconds apart
+        4. File is not locked by another process (os.open O_RDWR succeeds)
 
     If move_to_path is provided (a full file path including filename), the
     verified PDF is moved there (overwriting if it exists) and the destination
@@ -27,6 +28,7 @@ def wait_for_opera_print_pdf(timeout: int, move_to_path: str = None) -> tuple:
         (False, None) on timeout
     Does not raise.
     """
+    start_time = time.time()
     local_app_data = os.environ.get('LOCALAPPDATA') or os.path.join(
         os.environ.get('USERPROFILE', ''), 'AppData', 'Local')
 
@@ -61,6 +63,16 @@ def wait_for_opera_print_pdf(timeout: int, move_to_path: str = None) -> tuple:
             print(f"Attempt {attempt}: Found {len(matches)} candidate(s).")
 
         for path in matches:
+            try:
+                created_time = os.path.getctime(path)
+            except OSError as e:
+                print(f"  Could not read creation time for {path}: {e}")
+                continue
+
+            if created_time < start_time:
+                print(f"  {os.path.basename(path)}: created before this run, ignoring.")
+                continue
+
             try:
                 size = os.path.getsize(path)
             except OSError as e:

@@ -1,6 +1,6 @@
 # wait_opera_print_pdf.py
 
-Waits for an `OperaPrint*.pdf` file (e.g. `OperaPrint[1].pdf`) to appear **fully downloaded** in the current user's Windows INetCache, optionally moving it to a target location once it's ready.
+Waits for a newly created `OperaPrint*.pdf` file (e.g. `OperaPrint[1].pdf`) to appear **fully downloaded** in the current user's Windows INetCache, optionally moving it to a target location once it's ready. Files created before the function starts are ignored.
 
 ## Usage (CLI)
 
@@ -46,11 +46,14 @@ The function does **not** raise on failure — it returns a tuple so UiPath/call
 
 ## "Fully downloaded" criteria
 
-A file is considered fully downloaded only when **all three** are true:
+A file is considered fully downloaded only when **all four** are true:
 
-1. File exists and `size > 0`.
-2. Size is unchanged between two `os.path.getsize` calls **2 seconds apart**.
-3. The file is not locked by another process — confirmed by attempting `os.open(path, os.O_RDWR)`; if it raises `PermissionError`/`OSError`, the file is treated as still being written.
+1. Its Windows creation time, read with `os.path.getctime`, is not earlier than the function's start time.
+2. File exists and `size > 0`.
+3. Size is unchanged between two `os.path.getsize` calls **2 seconds apart**.
+4. The file is not locked by another process — confirmed by attempting `os.open(path, os.O_RDWR)`; if it raises `PermissionError`/`OSError`, the file is treated as still being written.
+
+The script must therefore be started before Opera creates the PDF. An old cached PDF cannot satisfy the wait even if it is otherwise complete.
 
 ## Where it scans
 
@@ -61,7 +64,7 @@ A file is considered fully downloaded only when **all three** are true:
 ## Polling behavior
 
 - Outer loop checks every **2 seconds** until `timeout` is reached.
-- Per attempt, all current matches are stat'd; the stability/lock check runs only on files whose size was already recorded on a previous pass (so a freshly-appearing file is watched for one extra cycle before being considered done).
+- Per attempt, old matches are ignored. New matches are stat'd; the stability/lock check runs only on files whose size was already recorded on a previous pass (so a freshly-appearing file is watched for one extra cycle before being considered done).
 - Logs attempt number, file basename, size, and stability status to stdout.
 
 ## UiPath Run activity
