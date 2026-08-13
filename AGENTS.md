@@ -2,14 +2,15 @@
 
 ## GitHub Credentials
 
-- Use `/workspace/work/myGH/git-credential-github` as the Git credential helper for authenticated GitHub operations.
-- Pass it to Git per command so repository or global configuration is not changed:
+- Use GitHub CLI (`gh`) for authenticated GitHub operations.
+- Confirm the active session before authenticated operations:
 
   ```bash
-  git -c credential.helper=/workspace/work/myGH/git-credential-github <command>
+  gh auth status
   ```
 
-- Do not read, display, log, copy, modify, or commit `myEmail`, `myKeys`, `myUsername`, or the helper's output.
-- Do not place usernames, passwords, personal access tokens, or helper output in remote URLs, command arguments, patches, commits, or responses.
-- Do not run the credential helper directly for inspection. Let Git invoke it through the credential protocol.
+- If authentication is required, use `gh auth login`. Do not manually read or export tokens from GitHub CLI's configuration.
+- Prefer `gh` commands for GitHub resources such as repositories, pull requests, issues, checks, and releases.
+- For authenticated Git commands, let GitHub CLI supply credentials through `gh auth git-credential`; never retrieve a token with `gh auth token` for use in a command.
+- Do not place usernames, passwords, personal access tokens, or credential output in remote URLs, command arguments, patches, commits, logs, or responses.
 - Redact credentials if an authentication error or remote URL unexpectedly includes them.
