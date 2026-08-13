@@ -8,7 +8,7 @@ Mermaid-compatible Markdown viewers render the flowcharts below.
 
 ## System Overview
 
-The project contains 47 VBA components: 8 standard modules, 34 workbook/worksheet class modules, and 5 UserForms. Static analysis identified 122 procedures and 104 direct internal call relationships.
+The source project originally contained 47 VBA components: 8 standard modules, 34 workbook/worksheet class modules, and 5 UserForms. The retained `.bas` and `.frm` exports contain 120 procedures and 104 direct internal call relationships.
 
 ```mermaid
 flowchart LR
@@ -132,60 +132,24 @@ flowchart TD
 
 | Component | Type | Procedures |
 |---|---|---:|
-| `ThisWorkbook.cls` | Workbook/worksheet module | 2 |
 | `tableContents.frm` | UserForm | 9 |
-| `Sheet002.cls` | Workbook/worksheet module | 0 |
-| `Sheet013.cls` | Workbook/worksheet module | 0 |
-| `Sheet30.cls` | Workbook/worksheet module | 0 |
 | `checkbyDept.bas` | Standard module | 9 |
-| `Sheet004.cls` | Workbook/worksheet module | 0 |
-| `Sheet015.cls` | Workbook/worksheet module | 0 |
-| `Sheet003116.cls` | Workbook/worksheet module | 0 |
 | `addItems.frm` | UserForm | 9 |
-| `Sheet8.cls` | Workbook/worksheet module | 0 |
-| `Sheet29.cls` | Workbook/worksheet module | 0 |
 | `Progress_Bar.frm` | UserForm | 7 |
 | `frmWait.frm` | UserForm | 1 |
-| `Sheet19.cls` | Workbook/worksheet module | 0 |
 | `updateBudgetFY.bas` | Standard module | 10 |
-| `Sheet14.cls` | Workbook/worksheet module | 0 |
 | `Funcs.bas` | Standard module | 11 |
 | `progressCode.bas` | Standard module | 1 |
 | `GlobalVariables.bas` | Standard module | 17 |
-| `Sheet012.cls` | Workbook/worksheet module | 0 |
-| `Sheet16.cls` | Workbook/worksheet module | 0 |
-| `Sheet18.cls` | Workbook/worksheet module | 0 |
-| `Sheet6.cls` | Workbook/worksheet module | 0 |
-| `Sheet148.cls` | Workbook/worksheet module | 0 |
 | `CallOverall.bas` | Standard module | 1 |
 | `ImportCode.bas` | Standard module | 1 |
-| `Sheet003115.cls` | Workbook/worksheet module | 0 |
 | `pnLSheet.bas` | Standard module | 35 |
-| `Sheet4.cls` | Workbook/worksheet module | 0 |
-| `Sheet17.cls` | Workbook/worksheet module | 0 |
-| `Sheet5.cls` | Workbook/worksheet module | 0 |
 | `viewPL.frm` | UserForm | 9 |
-| `Sheet1.cls` | Workbook/worksheet module | 0 |
-| `Sheet003117.cls` | Workbook/worksheet module | 0 |
-| `Sheet9.cls` | Workbook/worksheet module | 0 |
-| `Sheet11.cls` | Workbook/worksheet module | 0 |
-| `Sheet21.cls` | Workbook/worksheet module | 0 |
-| `Sheet28.cls` | Workbook/worksheet module | 0 |
-| `Sheet005.cls` | Workbook/worksheet module | 0 |
-| `Sheet006.cls` | Workbook/worksheet module | 0 |
-| `Sheet007.cls` | Workbook/worksheet module | 0 |
-| `Sheet010.cls` | Workbook/worksheet module | 0 |
-| `Sheet009.cls` | Workbook/worksheet module | 0 |
-| `Sheet011.cls` | Workbook/worksheet module | 0 |
-| `Sheet008.cls` | Workbook/worksheet module | 0 |
-| `Sheet20.cls` | Workbook/worksheet module | 0 |
 
 ## Procedure Inventory
 
 | Module | Procedure | Kind | Scope | Role |
 |---|---|---|---|---|
-| `ThisWorkbook.cls` | `Workbook_Open` | Sub | Private | Event handler |
-| `ThisWorkbook.cls` | `RegisterOCX` | Sub | Public | Callable routine |
 | `tableContents.frm` | `Label11_Click` | Sub | Private | Event handler |
 | `tableContents.frm` | `Label12_Click` | Sub | Private | Event handler |
 | `tableContents.frm` | `updateButton_Click` | Sub | Private | Event handler |
@@ -421,7 +385,6 @@ flowchart TD
 ### `tableContents`
 
 Code: `exported_vba/tableContents.frm`  
-Native designer streams: `exported_vba/tableContents.CompObj.bin`, `exported_vba/tableContents.VBFrame.bin`, `exported_vba/tableContents.f.bin`, `exported_vba/tableContents.o.bin`
 
 | Control | Caption | Type ID |
 |---|---|---:|
@@ -436,7 +399,6 @@ Event and helper procedures: `Label11_Click`, `Label12_Click`, `updateButton_Cli
 ### `addItems`
 
 Code: `exported_vba/addItems.frm`  
-Native designer streams: `exported_vba/addItems.CompObj.bin`, `exported_vba/addItems.VBFrame.bin`, `exported_vba/addItems.f.bin`, `exported_vba/addItems.o.bin`
 
 | Control | Caption | Type ID |
 |---|---|---:|
@@ -466,7 +428,6 @@ Event and helper procedures: `clearButton_Click`, `updateButton_Click`, `exitBut
 ### `Progress_Bar`
 
 Code: `exported_vba/Progress_Bar.frm`  
-Native designer streams: `exported_vba/Progress_Bar.CompObj.bin`, `exported_vba/Progress_Bar.VBFrame.bin`, `exported_vba/Progress_Bar.f.bin`, `exported_vba/Progress_Bar.o.bin`
 
 | Control | Caption | Type ID |
 |---|---|---:|
@@ -479,7 +440,6 @@ Event and helper procedures: `ProgressBar_Click`, `ProgressContainer_Click`, `St
 ### `frmWait`
 
 Code: `exported_vba/frmWait.frm`  
-Native designer streams: `exported_vba/frmWait.CompObj.bin`, `exported_vba/frmWait.VBFrame.bin`, `exported_vba/frmWait.f.bin`, `exported_vba/frmWait.o.bin`
 
 | Control | Caption | Type ID |
 |---|---|---:|
@@ -490,7 +450,6 @@ Event and helper procedures: `UserForm_Initialize`
 ### `viewPL`
 
 Code: `exported_vba/viewPL.frm`  
-Native designer streams: `exported_vba/viewPL.CompObj.bin`, `exported_vba/viewPL.VBFrame.bin`, `exported_vba/viewPL.f.bin`, `exported_vba/viewPL.o.bin`
 
 | Control | Caption | Type ID |
 |---|---|---:|
@@ -518,8 +477,5 @@ Event and helper procedures: `updateButton_Click`, `exitButton_Click`, `TreeView
 ## Export Notes
 
 - `.bas` files contain standard-module code.
-- `.cls` files contain workbook and worksheet code, including empty document modules retained for completeness.
 - `.frm` files contain each UserForm's VBA code-behind and an identifying form declaration.
-- `.f.bin` and `.o.bin` files preserve the native form designer/control streams from `vbaProject.bin`.
-- Excel's Windows-only `VBComponent.Export` is required to regenerate canonical importable `.frm`/`.frx` pairs from the native streams.
-- `PROJECT.txt`, `PROJECTwm.bin`, and `references.txt` preserve project metadata and reference information.
+- Workbook/worksheet `.cls` modules and native `.bin` streams are intentionally omitted from `exported_vba`.

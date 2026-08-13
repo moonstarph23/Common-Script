@@ -62,7 +62,7 @@ flowchart LR
 
 | Worksheet | Variant | Access | VBA-observable contract | Main procedures |
 |---|---|---:|---|---|
-| `P&L` | Both | B/R/W/C/Calc/X | Master P&L template and normal interactive target. Selector cells are `G1:G4` (company, cost center, customer segment, venue), `I1` (department/group), `I2` (date/filter), and `A2` (update mode). Detail starts at row 8: budget values are written to `G:R`, actual values to `W:AH`, and an additional block to `AV:BH`; `V8:V10000` and `AV8:BG10000` are cleared during refresh. Column `AO` (41) carries the `Do not clear` marker. Manual changes are read from `A8:AM[last]`. It is copied as the template for exported department sheets. | `viewPL.updateButton_Click`; `ClearPNL`; `updatePnL`; bulk writers; `updateManual`; `exportPnLs`; `CopySheetStructureFast` |
+| `P&L` | Both | B/R/W/C/Calc/X | Master P&L template and normal interactive target. Selector cells are `G1:G4` (company, cost center, customer segment, venue), `I1` (department/group), `I2` (date/filter), and `A2` (update mode). Detail starts at row 8: budget values are written to `G:R`, actual values to `W:AH`, and an additional block to `AV:BG`; `V8:V10000` and `AV8:BG10000` are cleared during refresh. Column `AO` (41) carries the `Do not clear` marker. Manual changes are read from `A8:AM[last]`. It is copied as the template for exported department sheets. | `viewPL.updateButton_Click`; `ClearPNL`; `updatePnL`; bulk writers; `updateManual`; `exportPnLs`; `CopySheetStructureFast` |
 | `P&L (USD)` | Both | B/Calc | Recalculated after `viewPL` changes the master P&L selectors. No direct value writes appear in the exported VBA. | `declareGlobal`; `viewPL.updateButton_Click` |
 | `P&L by Dept` | Both | B/R/W/C/Calc | Department matrix. Row 6 marks formula columns and row 7 contains department headers. The implementation clears/writes the dynamic department matrix, preserves configured formulas, and uses `I2` (falling back to `P&L!I2`) as the date filter. | `ClearDeptPNL`; `updatePnLbyDept`; `BulkWriteGtoRbyDept`; `ApplyFormulaRange` |
 | `P&L-Parameters` | Both | R; Corporate export F/X | Column `A`, rows `2:last`, maps the selected tree item to the value placed in the `viewPL` form. Corporate copies this sheet to exported workbooks and hides it there. | `viewPL.Treeview1_NodeClick`; Corporate `CopySourceSheets`; `hideSpecificSheets` |
@@ -70,6 +70,28 @@ flowchart LR
 | `P&L-Child` | Both | R | Row 1 contains parent keys and each matching column contains its children. It is also reused by the TOC form for its second-level nodes. | `viewPL.FillSubChildNodes`; `tableContents.FillSubChildNodes` |
 | `P&L-Child-Child` | Both | R | Row 1 contains child keys and matching columns contain the next hierarchy level. | `viewPL.FillSubSubChildNodes` |
 | `P&L-Child-Child-Child` | Both | R | Row 1 contains third-level keys and matching columns contain final selectable values. | `viewPL.FillSubSubSubChildNodes` |
+
+#### Procedures that affect the fixed `P&L` sheet
+
+`globalMasterSheet` is bound to `ThisWorkbook.Worksheets("P&L")`. Procedures described as active-sheet procedures affect the fixed `P&L` only when `P&L` is active; they can also affect copied or summary P&L sheets.
+
+| Procedure | Variant | Relationship to `P&L` | Effect |
+|---|---|---|---|
+| `declareGlobal` | Both | Direct bind | Resolves `P&L` into `globalMasterSheet`. It changes no cells, but workflows that call it require the tab to exist. |
+| `viewPL.updateButton_Click` | Both | Direct | Writes selectors to `G1:G4` and `I1`, writes the update mode to `A2`, recalculates the sheet, and calls `updatePnL`. Corporate supports additional group modes in `I1`. |
+| `ClearPNL` | Both | Active-sheet conditional | Clears `G:R` and `W:AH` from row 8 except rows marked `Do not clear` in `AO`; always clears `V8:V10000` and `AV8:BG10000`. |
+| `updatePnL` | Both | Active-sheet conditional | Calls `ClearPNL`, reads selectors/formulas from the active sheet, writes budget values/formulas to `G:R`, actual values/formulas to `W:AH`, a supporting budget block to `AV:BG`, processes configured special rows, filters, and recalculates. |
+| `BulkWriteGtoR`, `BulkWriteWtoAH`, `BulkWriteAVtoBH` | Both | Helper called by `updatePnL` | Perform the three bulk writes to the worksheet argument passed by `updatePnL`. Despite the third helper's name, its implemented write range is `AV:BG`. |
+| `FindRowByText` and `ProcessSpecialWinRows` helpers | Both | Direct read / indirect write | Find configured target rows by matching text in `P&L!F:F`; the resulting special-row amounts are added to the dictionaries later written by `updatePnL`. |
+| `updatePnLbyDept` | Both | Direct read | Uses `P&L!I2` as a fallback date filter and uses `P&L!F:F` row labels through `FindRowByText`; writes the result to `P&L by Dept`, not to `P&L`. |
+| `updateManual` | Both | Direct read and calculate; indirect refresh | Requires `P&L!A1` to equal `Individual P&L`, reads manual-change rows from `A8:AM[last]` plus selectors in `G1:G4`, updates `Budget-FY`, recalculates `P&L`, and then calls `updatePnL(25)`. |
+| `exportPnLs` | Both | Direct template read/copy; active-sheet clear | Copies `P&L` as the template for department sheets and reads its protected formula rows. Corporate explicitly activates and unprotects `P&L` before calling `ClearPNL`; Manila calls `ClearPNL` without first activating `P&L`. |
+| `CopySheetStructureFast` and `UpdatePnLForExportedSheets` | Both | Direct template/formula read | Copy the structure and selectors from `P&L`; read rows marked `Do not clear` in `AO` and copy their `G:R`/`W:AH` formulas into department export sheets. They do not write back to the source `P&L`. |
+| `CopySourceSheets` and `hideSpecificSheets` | Corporate only | Copied-tab structural effect | Copy the source `P&L` into each exported workbook and hide that copied tab. |
+| `OverAllPnl` | Both | Indirect, active-sheet conditional | Wrapper that calls `updatePnL(28)`. |
+| `ExportByDepartment`, `ExportByGroup` | Corporate only | Indirect | Wrappers around `exportPnLs` using different Setup metadata columns. |
+
+Corporate `refreshPnLs`, `LockSummarySheets`, and `LockIndividualPLSheets` explicitly exclude the tab named `P&L`. `UnlockAllSheets` is workbook-wide and can unprotect it only if `P&L!A1` contains one of the configured summary/individual markers.
 
 ### Assumption and input sheets
 
@@ -103,7 +125,7 @@ flowchart LR
 | Summary sheets | Corporate | Any worksheet whose `A1` contains `Summary`, `Overall`, `Summary2`, `Summary3`, `Summary4`, or `SummaryByCompany`. Corporate `viewPL` also sets group modes such as `BY GROUP` and `SummaryByGroup` in `P&L!I1`. | Refreshed using the column number in `A3`; controls may be reassigned; sheets are protected/unprotected and exported. These are marker values, not guaranteed physical tab names. |
 | Filterable output sheets | Corporate | Current worksheet or exported output sheet. | `A7:XFB1356` is filtered on field 63 for `SHOW`; chart/table utilities filter `I8:K33`, `K8:K33`, or `AO11:AT53`; filter routines also protect/unprotect the active sheet. |
 | Worksheet-parameter sources | Both | Caller passes `globalSheet`/`sourceSheet`; known callers pass active assumption sheets or `(A) Comps`, `(A) Payroll`, `(A) Opex`, and `(A) Below EBITDA`. | Source data and allocation markers are read; formulas recalculate. The called routines do not rename the source sheet. Any future caller can expand this family without a new literal sheet reference. |
-| `Sheet1` VBA codename | Both | `viewPL.FillChildNodes` uses the bare codename `Sheet1`. | Reads a column from row 2 to its last nonblank row. The exported class/project files do not preserve enough workbook metadata to prove which visible tab name owns this codename, so it is not merged with literal tab `Sheet1` or `P&L-Category1`. |
+| `Sheet1` VBA codename | Both | `viewPL.FillChildNodes` uses the bare codename `Sheet1`. | Reads a column from row 2 to its last nonblank row. The retained text sources do not contain enough workbook metadata to prove which visible tab name owns this codename, so it is not merged with literal tab `Sheet1` or `P&L-Category1`. |
 
 ## Corporate and Manila differences
 
@@ -125,7 +147,7 @@ flowchart LR
 | `newRowsActual`, `WriteBulkActualData` | Dynamic assumption sheet; existing `Actual-FY!A:U`. | Rebuilds `Actual-FY!A:U`, restores `V:AJ` formulas, recalculates both sheets. |
 | Budget allocation procedures | `Actual-FY`, `Budget-FY`, `Exclusions`, passed assumption sheet. | Add/update `Budget-FY!A:U`, formulas in `V:AJ`, and calculated period values `J:U`. |
 | Actual allocation procedures | `Actual-FY`, `Exclusions`, passed assumption sheet. | Add/update `Actual-FY!A:U` and calculated forecast-period values `J:U`. |
-| `updatePnL` and bulk writers | `Budget-FY!A:AJ`, `Actual-FY!A:AJ`, `Setup`, `Special Rows`, formulas/markers in the active P&L. | Active P&L `G:R`, `W:AH`, `AV:BH`; clears supporting ranges and recalculates. |
+| `updatePnL` and bulk writers | `Budget-FY!A:AJ`, `Actual-FY!A:AJ`, `Setup`, `Special Rows`, formulas/markers in the active P&L. | Active P&L `G:R`, `W:AH`, `AV:BG`; clears supporting ranges and recalculates. |
 | `updatePnLbyDept` | `Budget-FY!A:AJ`, `P&L`, `P&L by Dept`, `Special Rows`. | Dynamic department columns in `P&L by Dept`, preserving columns marked `Formula`. |
 | `updateManual` | `P&L!A8:AM[last]`, `Budget-FY`. | Rebuilds budget rows/formulas; Corporate marks `AK` and copies changed rows to `FOR OPEX TAB`. |
 | Corporate `updateManualExportedSheet` | Active `Individual P&L`, `Budget-FY`, `Setup`. | Same budget/manual effects for exported sheets, then filters the active output. |
@@ -140,8 +162,8 @@ flowchart LR
 - `Forecast` is inactive only in Manila; it is an active, required binding in Corporate.
 - Commented calls that would update the opposite FY sheet are not counted as effects of the containing procedure.
 - Unqualified `Range(...)`, `Cells(...)`, and `ActiveSheet` expressions depend on Excel runtime focus. They are attributed to a dynamic family where the caller makes that family clear; otherwise this document does not invent a fixed tab.
-- Worksheet class modules contain no procedures. Their exported identifiers do not reliably map every VBA codename to a visible tab name without the source workbook.
+- Workbook and worksheet class exports are intentionally omitted. The retained sources do not reliably map every VBA codename to a visible tab name without the source workbook.
 
 ## Static-analysis coverage
 
-The inventory includes active literal `Sheets(...)`/`Worksheets(...)` references, global worksheet bindings, array-based sheet lists, worksheet-name comparisons, workbook-wide loops, `ActiveSheet`, and worksheet parameters. Binary UserForm streams were not interpreted because the text `.frm` sources contain the relevant worksheet interactions. Runtime calls, formulas, named ranges, control bindings, and links embedded only in the absent workbook may add dependencies that cannot be observed from these exports.
+The inventory includes active literal `Sheets(...)`/`Worksheets(...)` references, global worksheet bindings, array-based sheet lists, worksheet-name comparisons, workbook-wide loops, `ActiveSheet`, and worksheet parameters. Workbook/worksheet class exports and native form streams are intentionally omitted; the retained `.bas` and `.frm` sources contain the worksheet interactions analyzed here. Runtime calls, formulas, named ranges, control bindings, and links embedded only in the absent workbook may add dependencies that cannot be observed from these exports.

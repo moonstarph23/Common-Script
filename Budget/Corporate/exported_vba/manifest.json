@@ -1,56 +1,20 @@
 {
   "location": "Corporate",
   "source": "Testing/Journal20Template20v3.xlsm",
-  "component_count": 59,
-  "procedure_count": 158,
+  "component_count": 14,
+  "procedure_count": 156,
   "components": [
-    {
-      "filename": "ThisWorkbook.cls",
-      "bytes": 2653
-    },
     {
       "filename": "tableContents.frm",
       "bytes": 5353
-    },
-    {
-      "filename": "Sheet002.cls",
-      "bytes": 301
-    },
-    {
-      "filename": "Sheet013.cls",
-      "bytes": 301
-    },
-    {
-      "filename": "Sheet003117.cls",
-      "bytes": 304
     },
     {
       "filename": "CallOverall.bas",
       "bytes": 92
     },
     {
-      "filename": "Sheet004.cls",
-      "bytes": 301
-    },
-    {
-      "filename": "Sheet13.cls",
-      "bytes": 300
-    },
-    {
-      "filename": "Sheet17.cls",
-      "bytes": 300
-    },
-    {
       "filename": "addItems.frm",
       "bytes": 13793
-    },
-    {
-      "filename": "Sheet8.cls",
-      "bytes": 299
-    },
-    {
-      "filename": "Sheet18.cls",
-      "bytes": 300
     },
     {
       "filename": "Progress_Bar.frm",
@@ -61,16 +25,8 @@
       "bytes": 1328
     },
     {
-      "filename": "Sheet19.cls",
-      "bytes": 300
-    },
-    {
       "filename": "updateBudgetFY.bas",
       "bytes": 13860
-    },
-    {
-      "filename": "Sheet14.cls",
-      "bytes": 300
     },
     {
       "filename": "checkbyDept.bas",
@@ -85,160 +41,24 @@
       "bytes": 104668
     },
     {
-      "filename": "Sheet012.cls",
-      "bytes": 301
-    },
-    {
-      "filename": "Sheet10.cls",
-      "bytes": 300
-    },
-    {
-      "filename": "Sheet7.cls",
-      "bytes": 299
-    },
-    {
-      "filename": "Sheet6.cls",
-      "bytes": 299
-    },
-    {
-      "filename": "Sheet3.cls",
-      "bytes": 299
-    },
-    {
-      "filename": "Sheet2.cls",
-      "bytes": 299
-    },
-    {
       "filename": "Funcs.bas",
       "bytes": 8420
-    },
-    {
-      "filename": "Sheet003115.cls",
-      "bytes": 304
     },
     {
       "filename": "pnLSheet.bas",
       "bytes": 230810
     },
     {
-      "filename": "Sheet4.cls",
-      "bytes": 299
-    },
-    {
-      "filename": "Sheet15.cls",
-      "bytes": 300
-    },
-    {
-      "filename": "Sheet5.cls",
-      "bytes": 299
-    },
-    {
       "filename": "viewPL.frm",
       "bytes": 10811
-    },
-    {
-      "filename": "Sheet1.cls",
-      "bytes": 299
-    },
-    {
-      "filename": "Sheet003116.cls",
-      "bytes": 304
-    },
-    {
-      "filename": "Sheet9.cls",
-      "bytes": 299
-    },
-    {
-      "filename": "Sheet11.cls",
-      "bytes": 300
-    },
-    {
-      "filename": "Sheet21.cls",
-      "bytes": 300
-    },
-    {
-      "filename": "Sheet12.cls",
-      "bytes": 300
-    },
-    {
-      "filename": "Sheet005.cls",
-      "bytes": 301
-    },
-    {
-      "filename": "Sheet006.cls",
-      "bytes": 301
-    },
-    {
-      "filename": "Sheet007.cls",
-      "bytes": 301
-    },
-    {
-      "filename": "Sheet010.cls",
-      "bytes": 301
-    },
-    {
-      "filename": "Sheet009.cls",
-      "bytes": 301
-    },
-    {
-      "filename": "Sheet011.cls",
-      "bytes": 301
-    },
-    {
-      "filename": "Sheet008.cls",
-      "bytes": 301
-    },
-    {
-      "filename": "Sheet20.cls",
-      "bytes": 300
-    },
-    {
-      "filename": "Sheet22.cls",
-      "bytes": 300
     },
     {
       "filename": "Module1.bas",
       "bytes": 327
     },
     {
-      "filename": "Sheet23.cls",
-      "bytes": 300
-    },
-    {
       "filename": "Module2.bas",
       "bytes": 8526
-    },
-    {
-      "filename": "Sheet24.cls",
-      "bytes": 300
-    },
-    {
-      "filename": "Sheet29.cls",
-      "bytes": 300
-    },
-    {
-      "filename": "Sheet30.cls",
-      "bytes": 300
-    },
-    {
-      "filename": "Sheet16.cls",
-      "bytes": 300
-    },
-    {
-      "filename": "Sheet25.cls",
-      "bytes": 300
-    },
-    {
-      "filename": "Sheet26.cls",
-      "bytes": 300
-    },
-    {
-      "filename": "Sheet27.cls",
-      "bytes": 300
-    },
-    {
-      "filename": "Sheet28.cls",
-      "bytes": 300
     }
   ],
   "forms": [
@@ -271,29 +91,7 @@
           "type_id": 21
         }
       ],
-      "error": null,
-      "streams": [
-        {
-          "stream": "tableContents/\u0001CompObj",
-          "file": "tableContents.CompObj.bin",
-          "bytes": 97
-        },
-        {
-          "stream": "tableContents/\u0003VBFrame",
-          "file": "tableContents.VBFrame.bin",
-          "bytes": 313
-        },
-        {
-          "stream": "tableContents/f",
-          "file": "tableContents.f.bin",
-          "bytes": 330
-        },
-        {
-          "stream": "tableContents/o",
-          "file": "tableContents.o.bin",
-          "bytes": 288
-        }
-      ]
+      "error": null
     },
     {
       "name": "addItems",
@@ -399,29 +197,7 @@
           "type_id": 17
         }
       ],
-      "error": null,
-      "streams": [
-        {
-          "stream": "addItems/\u0001CompObj",
-          "file": "addItems.CompObj.bin",
-          "bytes": 97
-        },
-        {
-          "stream": "addItems/\u0003VBFrame",
-          "file": "addItems.VBFrame.bin",
-          "bytes": 304
-        },
-        {
-          "stream": "addItems/f",
-          "file": "addItems.f.bin",
-          "bytes": 967
-        },
-        {
-          "stream": "addItems/o",
-          "file": "addItems.o.bin",
-          "bytes": 1164
-        }
-      ]
+      "error": null
     },
     {
       "name": "Progress_Bar",
@@ -442,29 +218,7 @@
           "type_id": 21
         }
       ],
-      "error": null,
-      "streams": [
-        {
-          "stream": "Progress_Bar/\u0001CompObj",
-          "file": "Progress_Bar.CompObj.bin",
-          "bytes": 97
-        },
-        {
-          "stream": "Progress_Bar/\u0003VBFrame",
-          "file": "Progress_Bar.VBFrame.bin",
-          "bytes": 299
-        },
-        {
-          "stream": "Progress_Bar/f",
-          "file": "Progress_Bar.f.bin",
-          "bytes": 259
-        },
-        {
-          "stream": "Progress_Bar/o",
-          "file": "Progress_Bar.o.bin",
-          "bytes": 156
-        }
-      ]
+      "error": null
     },
     {
       "name": "frmWait",
@@ -475,29 +229,7 @@
           "type_id": 21
         }
       ],
-      "error": null,
-      "streams": [
-        {
-          "stream": "frmWait/\u0001CompObj",
-          "file": "frmWait.CompObj.bin",
-          "bytes": 97
-        },
-        {
-          "stream": "frmWait/\u0003VBFrame",
-          "file": "frmWait.VBFrame.bin",
-          "bytes": 294
-        },
-        {
-          "stream": "frmWait/f",
-          "file": "frmWait.f.bin",
-          "bytes": 135
-        },
-        {
-          "stream": "frmWait/o",
-          "file": "frmWait.o.bin",
-          "bytes": 68
-        }
-      ]
+      "error": null
     },
     {
       "name": "viewPL",
@@ -568,29 +300,7 @@
           "type_id": 23
         }
       ],
-      "error": null,
-      "streams": [
-        {
-          "stream": "viewPL/\u0001CompObj",
-          "file": "viewPL.CompObj.bin",
-          "bytes": 97
-        },
-        {
-          "stream": "viewPL/\u0003VBFrame",
-          "file": "viewPL.VBFrame.bin",
-          "bytes": 294
-        },
-        {
-          "stream": "viewPL/f",
-          "file": "viewPL.f.bin",
-          "bytes": 663
-        },
-        {
-          "stream": "viewPL/o",
-          "file": "viewPL.o.bin",
-          "bytes": 720
-        }
-      ]
+      "error": null
     }
   ],
   "calls": [
