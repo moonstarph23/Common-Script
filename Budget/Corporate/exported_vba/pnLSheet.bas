@@ -1,11 +1,111 @@
 Attribute VB_Name = "pnLSheet"
+Private Function GetLastUsedRow(ByVal ws As Worksheet, Optional ByVal minimumRow As Long = 8) As Long
+
+    Dim lastCell As Range
+    On Error Resume Next
+    Set lastCell = ws.Cells.Find(What:="*", After:=ws.Cells(1, 1), LookIn:=xlFormulas, _
+                                 LookAt:=xlPart, SearchOrder:=xlByRows, _
+                                 SearchDirection:=xlPrevious, MatchCase:=False, SearchFormat:=False)
+    On Error GoTo 0
+
+    If lastCell Is Nothing Then
+        GetLastUsedRow = minimumRow
+    ElseIf lastCell.Row < minimumRow Then
+        GetLastUsedRow = minimumRow
+    Else
+        GetLastUsedRow = lastCell.Row
+    End If
+
+End Function
+
+Private Function GetLastDataRow(ByVal ws As Worksheet, ByVal keyColumn As Variant, Optional ByVal minimumRow As Long = 12) As Long
+
+    Dim lastRow As Long
+    lastRow = ws.Cells(ws.Rows.Count, keyColumn).End(xlUp).Row
+    If lastRow < minimumRow Then lastRow = minimumRow
+    GetLastDataRow = lastRow
+
+End Function
+
+Private Function ValidatePnLTargetRows(ByVal sourceData As Variant, ByVal sourceSheetName As String, _
+                                       ByVal deptCol As Long, ByVal department As String, _
+                                       ByVal targetSheet As Worksheet, ByVal targetLastRow As Long, _
+                                       ByRef validationError As String) As Boolean
+
+    Const TARGET_ROW_COLUMN As Long = 31 ' AE
+    Dim i As Long
+    Dim mappingValue As Variant
+    Dim targetRow As Long
+    Dim includeRow As Boolean
+
+    ValidatePnLTargetRows = False
+
+    For i = 1 To UBound(sourceData, 1)
+        If deptCol = 0 Then
+            includeRow = True
+        Else
+            includeRow = (CStr(sourceData(i, deptCol)) = department)
+        End If
+
+        If includeRow Then
+            mappingValue = sourceData(i, TARGET_ROW_COLUMN)
+
+            If IsError(mappingValue) Then
+                validationError = sourceSheetName & " row " & (i + 11) & _
+                                  " has an Excel error in the P&L target column AE."
+                Exit Function
+            ElseIf Not IsEmpty(mappingValue) And CStr(mappingValue) <> "" Then
+                If Not IsNumeric(mappingValue) Then
+                    validationError = sourceSheetName & " row " & (i + 11) & _
+                                      " has a nonnumeric P&L target in AE: '" & CStr(mappingValue) & "'."
+                    Exit Function
+                End If
+
+                If CDbl(mappingValue) = 0 Then GoTo NextMappingRow
+
+                If CDbl(mappingValue) <> Fix(CDbl(mappingValue)) Then
+                    validationError = sourceSheetName & " row " & (i + 11) & _
+                                      " has a non-integer P&L target in AE: '" & CStr(mappingValue) & "'."
+                    Exit Function
+                End If
+
+                targetRow = CLng(mappingValue)
+                If targetRow < 8 Or targetRow > targetLastRow Then
+                    validationError = sourceSheetName & " row " & (i + 11) & _
+                                      " maps AE to P&L row " & targetRow & _
+                                      ", outside the valid range 8:" & targetLastRow & "."
+                    Exit Function
+                End If
+
+                If Trim(CStr(targetSheet.Cells(targetRow, "F").value)) = "" Then
+                    validationError = sourceSheetName & " row " & (i + 11) & _
+                                      " maps AE to P&L row " & targetRow & _
+                                      ", but column F on that row is blank."
+                    Exit Function
+                End If
+            End If
+        End If
+NextMappingRow:
+    Next i
+
+    ValidatePnLTargetRows = True
+
+End Function
+
 Sub ClearPNL()
 
     Dim wsTarget As Worksheet
     Dim lastRow As Long
     Dim i As Long
+    Dim previousCalculation As XlCalculation
+    Dim previousScreenUpdating As Boolean
+    Dim previousEnableEvents As Boolean
+    previousCalculation = Application.Calculation
+    previousScreenUpdating = Application.ScreenUpdating
+    previousEnableEvents = Application.EnableEvents
+
     Set wsTarget = ThisWorkbook.activeSheet
-    lastRow = wsTarget.Cells(wsTarget.Rows.Count, "A").End(xlUp).Row
+    lastRow = GetLastUsedRow(wsTarget, 8)
     Application.Calculation = xlCalculationManual
     Application.ScreenUpdating = False
     Application.EnableEvents = False
@@ -20,12 +120,11 @@ Sub ClearPNL()
         End If
     Next i
 
-    ' Retain these lines, do not remove
-    wsTarget.Range("AV8:BG10000").ClearContents 'Retain this do not remove !Important
-    wsTarget.Range("V8:V10000").ClearContents 'Retain this do not remove !Important
-    Application.Calculation = xlCalculationAutomatic
-    Application.ScreenUpdating = True
-    Application.EnableEvents = True
+    wsTarget.Range(wsTarget.Cells(8, "AV"), wsTarget.Cells(lastRow, "BG")).ClearContents
+    wsTarget.Range(wsTarget.Cells(8, "V"), wsTarget.Cells(lastRow, "V")).ClearContents
+    Application.Calculation = previousCalculation
+    Application.ScreenUpdating = previousScreenUpdating
+    Application.EnableEvents = previousEnableEvents
 
 End Sub
 
@@ -34,8 +133,14 @@ Sub ClearDeptPNL()
     Dim wsTarget As Worksheet
     Dim lastRow As Long, lastCol As Long
     Dim i As Long, j As Long
+    Dim previousCalculation As XlCalculation
+    Dim previousScreenUpdating As Boolean
+    Dim previousEnableEvents As Boolean
+    previousCalculation = Application.Calculation
+    previousScreenUpdating = Application.ScreenUpdating
+    previousEnableEvents = Application.EnableEvents
     Set wsTarget = ThisWorkbook.Sheets("P&L by Dept")
-    lastRow = wsTarget.Cells(wsTarget.Rows.Count, "F").End(xlUp).Row
+    lastRow = GetLastUsedRow(wsTarget, 8)
 
     ' Find last populated column in row 7 (from G to ZZZ)
     lastCol = wsTarget.Cells(7, wsTarget.Columns.Count).End(xlToLeft).Column
@@ -60,9 +165,9 @@ Sub ClearDeptPNL()
     Next i
     wsTarget.Calculate
 
-    'Application.Calculation = xlCalculationAutomatic
-    Application.ScreenUpdating = True
-    Application.EnableEvents = True
+    Application.Calculation = previousCalculation
+    Application.ScreenUpdating = previousScreenUpdating
+    Application.EnableEvents = previousEnableEvents
 
 End Sub
 
@@ -82,14 +187,39 @@ Sub updatePnL(deptCol As Long)
     Dim arrBudget As Variant, arrActual As Variant
     Dim AEcol As Long, StatCol As Long
     Dim wsTarget As Worksheet
+    Dim pnlLastRow As Long, budgetLastRow As Long, actualLastRow As Long
+    Dim validationError As String
+    Dim previousCalculation As XlCalculation
+    Dim previousScreenUpdating As Boolean
+    Dim previousEnableEvents As Boolean
 
     ' Initialize
+    previousCalculation = Application.Calculation
+    previousScreenUpdating = Application.ScreenUpdating
+    previousEnableEvents = Application.EnableEvents
     Application.Calculation = xlCalculationManual
     Application.ScreenUpdating = False
     Application.EnableEvents = False
     startTime = Timer
     Call declareGlobal
     Set wsTarget = ThisWorkbook.activeSheet
+
+    department = CStr(wsTarget.Range("I1").value)
+    pnlLastRow = GetLastUsedRow(wsTarget, 8)
+    budgetLastRow = GetLastDataRow(globalBudgetFYSheet, "F", 12)
+    actualLastRow = GetLastDataRow(globalActualFYSheet, "F", 12)
+
+    ' Recalculate AE target-row formulas after rows are inserted in the P&L layout.
+    globalBudgetFYSheet.Calculate
+    globalActualFYSheet.Calculate
+
+    arrBudget = globalBudgetFYSheet.Range("A12:AJ" & budgetLastRow).value
+    arrActual = globalActualFYSheet.Range("A12:AJ" & actualLastRow).value
+
+    If Not ValidatePnLTargetRows(arrBudget, globalBudgetFYSheet.Name, deptCol, department, _
+                                 wsTarget, pnlLastRow, validationError) Then GoTo ValidationFailed
+    If Not ValidatePnLTargetRows(arrActual, globalActualFYSheet.Name, deptCol, department, _
+                                 wsTarget, pnlLastRow, validationError) Then GoTo ValidationFailed
     
     ' Safely clear any AutoFilter state
     On Error Resume Next
@@ -102,17 +232,14 @@ Sub updatePnL(deptCol As Long)
     
     
     Call ClearPNL
-    department = wsTarget.Range("I1").value
-    lastRow = 10000
+    lastRow = pnlLastRow
 
     'DeptCol = 25 ' department column
     AEcol = 31 ' AE column (target row mapping)
     StatCol = 24 ' Statistics column
     Debug.Print "=== P&L Update Started for Department: " & department & " ==="
 
-    '--- STEP 1: Read all data into arrays ---
-    arrBudget = globalBudgetFYSheet.Range("A12:AJ" & lastRow).value
-    arrActual = globalActualFYSheet.Range("A12:AJ" & lastRow).value
+    '--- STEP 1: FY data was read and validated before clearing the target sheet ---
 
     '--- STEP 2: Build two separate dictionaries for G-R and W-AH columns ---
     Dim dictPnlRowsColGtoR As Object, dictPnlRowsColWtoAH As Object
@@ -340,9 +467,6 @@ Sub updatePnL(deptCol As Long)
 
     ' Finalize
     wsTarget.Calculate
-    Application.Calculation = xlCalculationAutomatic
-    Application.ScreenUpdating = True
-    Application.EnableEvents = True
     elapsedTime = Timer - startTime
     Debug.Print "=== P&L Update Completed ==="
     Debug.Print "Total G-R dictionary entries: " & dictPnlRowsColGtoR.Count
@@ -350,7 +474,19 @@ Sub updatePnL(deptCol As Long)
     
     Call FilterSheets
 
+    Application.Calculation = previousCalculation
+    Application.ScreenUpdating = previousScreenUpdating
+    Application.EnableEvents = previousEnableEvents
+
     'MsgBox "P&L Update completed!" & vbCrLf & "Time elapsed: " & Format(elapsedTime, "0.00") & " seconds" & vbCrLf & "G-R entries: " & dictPnlRowsColGtoR.Count & ", W-AH entries: " & dictPnlRowsColWtoAH.Count, vbInformation
+    Exit Sub
+
+ValidationFailed:
+    Application.Calculation = previousCalculation
+    Application.ScreenUpdating = previousScreenUpdating
+    Application.EnableEvents = previousEnableEvents
+    MsgBox "P&L refresh stopped before clearing any values." & vbCrLf & vbCrLf & validationError, _
+           vbCritical, "Invalid P&L row mapping"
 
 End Sub
 
@@ -638,10 +774,6 @@ Public Sub exportPnLs(Optional filterCriteria As Variant = "By Department", Opti
     Application.EnableEvents = False
     Call declareGlobal
 
-    ' Hard code formulas to values in Budget-FY and Actual-FY sheets
-    Debug.Print "Converting formulas to values in Budget-FY and Actual-FY sheets..."
-    Call HardCodeFormulasInSourceSheets
-
     ' Activate P&L sheet and safely clear any AutoFilter state
     Debug.Print "Activating P&L sheet and clearing AutoFilter state..."
     globalMasterSheet.Activate
@@ -659,10 +791,6 @@ Public Sub exportPnLs(Optional filterCriteria As Variant = "By Department", Opti
         End If
     End If
     On Error GoTo 0
-
-    ' OPTIMIZATION: Clear the master sheet first to ensure clean data
-    Debug.Print "Pre-clearing master sheet for clean export..."
-    Call ClearPNL
 
     ' File dialog for save location
     Set saveDialog = Application.FileDialog(msoFileDialogFolderPicker)
@@ -749,7 +877,22 @@ NextRow:
 
     ' Build master dictionary with composite keys (row|dept)
     Set masterDict = CreateObject("Scripting.Dictionary")
-    Call BuildMasterDictionary(masterDict, uniqueDepts, columnRefCol, filenameCol)
+    Dim validationError As String
+    If Not BuildMasterDictionary(masterDict, uniqueDepts, columnRefCol, filenameCol, validationError) Then
+        Application.Calculation = xlCalculationAutomatic
+        Application.ScreenUpdating = True
+        Application.EnableEvents = True
+        MsgBox "P&L export stopped before clearing any values." & vbCrLf & vbCrLf & validationError, _
+               vbCritical, "Invalid P&L row mapping"
+        Exit Sub
+    End If
+
+    ' Hard code formulas only after the row mappings have been recalculated and validated.
+    Debug.Print "Converting formulas to values in Budget-FY and Actual-FY sheets..."
+    Call HardCodeFormulasInSourceSheets
+
+    Debug.Print "Pre-clearing master sheet for clean export..."
+    Call ClearPNL
 
     ' Process each unique filename
     Dim filenameKey As Variant
@@ -1303,23 +1446,28 @@ Private Sub BulkRemoveControlsAllSheets(targetWorkbook As Workbook)
 End Sub
 
 
-Private Sub BuildMasterDictionary(masterDict As Object, uniqueDepts As Object, columnRefCol As String, filenameCol As String)
+Private Function BuildMasterDictionary(masterDict As Object, uniqueDepts As Object, columnRefCol As String, _
+                                       filenameCol As String, ByRef validationError As String) As Boolean
 
     ' Build unified dictionary with composite keys (row|dept) for all departments
-    Dim lastRow As Long
+    Dim budgetLastRow As Long, actualLastRow As Long
     Dim i As Long, k As Long
     Dim arrBudget As Variant, arrActual As Variant
     Dim AEcol As Long
     Dim dept As Variant
     Dim targetRow As Long
     Dim compositeKey As String
-    lastRow = 10000
+    BuildMasterDictionary = False
+    budgetLastRow = GetLastDataRow(globalBudgetFYSheet, "F", 12)
+    actualLastRow = GetLastDataRow(globalActualFYSheet, "F", 12)
+    globalBudgetFYSheet.Calculate
+    globalActualFYSheet.Calculate
     AEcol = 31 ' AE column (target row mapping)
     Debug.Print "Building master dictionary with composite keys..."
 
     '--- Read all data into arrays ---
-    arrBudget = globalBudgetFYSheet.Range("A12:AJ" & lastRow).value
-    arrActual = globalActualFYSheet.Range("A12:AJ" & lastRow).value
+    arrBudget = globalBudgetFYSheet.Range("A12:AJ" & budgetLastRow).value
+    arrActual = globalActualFYSheet.Range("A12:AJ" & actualLastRow).value
 
     ' Build department column mapping from Setup sheet
     Dim deptColMapping As Object
@@ -1354,6 +1502,12 @@ Private Sub BuildMasterDictionary(masterDict As Object, uniqueDepts As Object, c
         Else
             Debug.Print "  WARNING: No column mapping found for department " & dept & ", using default column 25"
         End If
+
+        If Not ValidatePnLTargetRows(arrBudget, globalBudgetFYSheet.Name, deptCol, CStr(dept), _
+                                     globalMasterSheet, GetLastUsedRow(globalMasterSheet, 8), validationError) Then Exit Function
+        If Not ValidatePnLTargetRows(arrActual, globalActualFYSheet.Name, deptCol, CStr(dept), _
+                                     globalMasterSheet, GetLastUsedRow(globalMasterSheet, 8), validationError) Then Exit Function
+
         For i = 1 To UBound(arrBudget, 1)
             If arrBudget(i, deptCol) = dept And arrBudget(i, AEcol) <> 0 Then
                 targetRow = arrBudget(i, AEcol)
@@ -1414,8 +1568,9 @@ Private Sub BuildMasterDictionary(masterDict As Object, uniqueDepts As Object, c
         Next i
     Next dept
     Debug.Print "Master dictionary built with " & masterDict.Count & " entries"
+    BuildMasterDictionary = True
 
-End Sub
+End Function
 
 
 Private Sub UpdatePnLForExportedSheets(targetSheet As Worksheet, department As String, masterDict As Object, columnRefCol As String, filenameCol As String)
@@ -1423,9 +1578,12 @@ Private Sub UpdatePnLForExportedSheets(targetSheet As Worksheet, department As S
     ' Update P&L data for exported sheets using pre-built master dictionary
     Debug.Print "Updating P&L for department: " & department
 
-    ' Clear existing data
-    targetSheet.Range("G8:R10000").ClearContents
-    targetSheet.Range("W8:AH10000").ClearContents
+    Dim targetLastRow As Long
+    targetLastRow = GetLastUsedRow(targetSheet, 8)
+
+    ' Clear existing data through the actual copied-template boundary.
+    targetSheet.Range(targetSheet.Cells(8, "G"), targetSheet.Cells(targetLastRow, "R")).ClearContents
+    targetSheet.Range(targetSheet.Cells(8, "W"), targetSheet.Cells(targetLastRow, "AH")).ClearContents
 
     ' Build separate dictionaries for this department
     Dim dictGtoR As Object, dictWtoAH As Object
@@ -1544,7 +1702,7 @@ Private Sub UpdatePnLForExportedSheets(targetSheet As Worksheet, department As S
 
     ' Add formula rows (rows with AO = "Do not clear")
     Dim i2 As Long, k2 As Long
-    For i2 = 8 To 10000
+    For i2 = 8 To GetLastUsedRow(globalMasterSheet, 8)
         If globalMasterSheet.Cells(i2, 41).value = "Do not clear" Then
 
             ' Add budget formulas to G-R
@@ -1574,10 +1732,11 @@ Private Sub UpdatePnLForExportedSheets(targetSheet As Worksheet, department As S
     Debug.Print "Processing special rows for department: " & department
 
     ' Read budget and actual data arrays for special row processing
-    Dim lastRow As Long: lastRow = 10000
+    Dim budgetLastRow As Long: budgetLastRow = GetLastDataRow(globalBudgetFYSheet, "F", 12)
+    Dim actualLastRow As Long: actualLastRow = GetLastDataRow(globalActualFYSheet, "F", 12)
     Dim arrBudget As Variant, arrActual As Variant
-    arrBudget = globalBudgetFYSheet.Range("A12:AJ" & lastRow).value
-    arrActual = globalActualFYSheet.Range("A12:AJ" & lastRow).value
+    arrBudget = globalBudgetFYSheet.Range("A12:AJ" & budgetLastRow).value
+    arrActual = globalActualFYSheet.Range("A12:AJ" & actualLastRow).value
 
     ' Determine the correct department column for this department
     Dim deptCol As Long: deptCol = 25 ' Default fallback
@@ -1709,13 +1868,29 @@ Sub updatePnLbyDept()
     Dim startTime As Double, elapsedTime As Double
     Dim arrBudget As Variant
     Dim AEcol As Long, dateCol As Long
+    Dim budgetLastRow As Long
+    Dim validationError As String
+    Dim previousCalculation As XlCalculation
+    Dim previousScreenUpdating As Boolean
+    Dim previousEnableEvents As Boolean
 
     ' Initialize
+    previousCalculation = Application.Calculation
+    previousScreenUpdating = Application.ScreenUpdating
+    previousEnableEvents = Application.EnableEvents
     Application.Calculation = xlCalculationManual
     Application.ScreenUpdating = False
     Application.EnableEvents = False
     startTime = Timer
     Call declareGlobal
+
+    lastRow = GetLastUsedRow(globalMasterSheetDept, 8)
+    budgetLastRow = GetLastDataRow(globalBudgetFYSheet, "F", 12)
+    globalBudgetFYSheet.Calculate
+    arrBudget = globalBudgetFYSheet.Range("A12:AJ" & budgetLastRow).value
+
+    If Not ValidatePnLTargetRows(arrBudget, globalBudgetFYSheet.Name, 0, "", _
+                                 globalMasterSheetDept, lastRow, validationError) Then GoTo ValidationFailed
 
     '--- PRE-STEP: Read column formulas BEFORE clearing the sheet ---
     Debug.Print "=== PRE-READING Column Formulas BEFORE Clear ==="
@@ -1738,7 +1913,6 @@ Sub updatePnLbyDept()
     ' Pre-read all existing formulas from formula columns before clearing
     Dim dictExistingFormulas As Object
     Set dictExistingFormulas = CreateObject("Scripting.Dictionary")
-    lastRow = 10000
     Dim preReadColKey As Variant
     For Each preReadColKey In formulaColumns.keys
         Dim preReadColNum As Long: preReadColNum = CLng(preReadColKey)
@@ -1845,8 +2019,7 @@ Sub updatePnLbyDept()
     Debug.Print "dateFilter: '" & dateFilter & "' -> Column: " & dateCol
     Debug.Print "=== P&L by Dept Update Started for Date Filter: " & dateFilter & " (Column " & dateCol & ") ==="
 
-    '--- STEP 1: Read budget data into array ---
-    arrBudget = globalBudgetFYSheet.Range("A12:AJ" & lastRow).value
+    '--- STEP 1: Budget data was read and validated before clearing the target sheet ---
 
     '--- STEP 2: Get department columns from globalMasterSheetDept row 7 ---
 
@@ -2131,14 +2304,22 @@ NextFormulaColumn:
 
     ' Finalize
     globalMasterSheetDept.Calculate
-    Application.Calculation = xlCalculationAutomatic
-    Application.ScreenUpdating = True
-    Application.EnableEvents = True
+    Application.Calculation = previousCalculation
+    Application.ScreenUpdating = previousScreenUpdating
+    Application.EnableEvents = previousEnableEvents
      Application.DisplayStatusBar = True
     elapsedTime = Timer - startTime
     Debug.Print "=== P&L by Dept Update Completed ==="
     Debug.Print "Total department dictionary entries: " & dictPnlRowsbyDept.Count
     Debug.Print "Date filter: " & dateFilter & " (Column " & dateCol & ")"
+    Exit Sub
+
+ValidationFailed:
+    Application.Calculation = previousCalculation
+    Application.ScreenUpdating = previousScreenUpdating
+    Application.EnableEvents = previousEnableEvents
+    MsgBox "P&L by Dept refresh stopped before clearing any values." & vbCrLf & vbCrLf & validationError, _
+           vbCritical, "Invalid P&L row mapping"
 
 End Sub
 
@@ -2386,7 +2567,7 @@ Private Function FindRowByText(searchText As String) As Long
     ' Find row number in globalMasterSheet Column F that exactly matches searchText
     Dim i As Long
     Debug.Print "Searching for exact match of '" & searchText & "' in globalMasterSheet Column F..."
-    For i = 8 To 10000 ' Search reasonable range
+    For i = 8 To GetLastUsedRow(globalMasterSheet, 8)
         If StrComp(Trim(CStr(globalMasterSheet.Cells(i, "F").value)), Trim(searchText), vbTextCompare) = 0 Then
             FindRowByText = i
             Debug.Print "Found exact match of '" & searchText & "' at row " & i
@@ -3181,8 +3362,7 @@ Sub updateManual()
 
     ' --- Step 2: Find last row in globalMasterSheet column F and collect Manual Changes ---
     Dim lastRowMaster As Long
-    lastRowMaster = globalMasterSheet.Cells(globalMasterSheet.Rows.Count, "F").End(xlUp).Row
-    If lastRowMaster < 1209 Then lastRowMaster = 1209
+    lastRowMaster = GetLastUsedRow(globalMasterSheet, 8)
 
     ' Read globalMasterSheet data in bulk
     Dim arrMasterData As Variant
@@ -3701,8 +3881,7 @@ Sub updateManualExportedSheet()
 
     ' --- Step 2: Find last row in active sheet column F and collect Manual Changes ---
     Dim lastRowMaster As Long
-    lastRowMaster = activeSheet.Cells(activeSheet.Rows.Count, "F").End(xlUp).Row
-    If lastRowMaster < 1209 Then lastRowMaster = 1209
+    lastRowMaster = GetLastUsedRow(activeSheet, 8)
 
     ' Read active sheet data in bulk
     Dim arrMasterData As Variant
@@ -3910,7 +4089,8 @@ Private Sub ApplyFilterSheetsToActiveSheet(targetSheet As Worksheet)
     On Error Resume Next
 
     ' Apply the exact same filter logic as your FilterSheets macro
-    targetSheet.Range("$A$7:$XFB$1356").AutoFilter Field:=63, Criteria1:="SHOW"
+    lastRow = GetLastUsedRow(targetSheet, 7)
+    targetSheet.Range("$A$7:$XFB$" & lastRow).AutoFilter Field:=63, Criteria1:="SHOW"
     On Error GoTo 0
 
 End Sub
@@ -4417,7 +4597,7 @@ Sub getAllManualChanges()
         summaryDetails = vbCrLf & vbCrLf & "Summary Sheets Found:" & vbCrLf
         Dim summaryKey As Variant
         For Each summaryKey In foundSummarySheets.keys
-            summaryDetails = summaryDetails & "• " & CStr(summaryKey) & ": " & foundSummarySheets(summaryKey) & vbCrLf
+            summaryDetails = summaryDetails & "- " & CStr(summaryKey) & ": " & foundSummarySheets(summaryKey) & vbCrLf
         Next summaryKey
     Else
         summaryDetails = vbCrLf & vbCrLf & "No Summary sheets found."
@@ -4444,8 +4624,7 @@ Private Function CheckForManualChanges(targetSheet As Worksheet) As Boolean
 
     ' Find last row in target sheet column F
     Dim lastRowMaster As Long
-    lastRowMaster = targetSheet.Cells(targetSheet.Rows.Count, "F").End(xlUp).Row
-    If lastRowMaster < 1209 Then lastRowMaster = 1209
+    lastRowMaster = GetLastUsedRow(targetSheet, 8)
 
     ' Read target sheet data in bulk (only columns A and U to minimize memory usage)
     Dim arrCheckData As Variant
@@ -5058,7 +5237,8 @@ Public Sub FilterSheetsNewWorkbook()
     On Error GoTo 0
     
     ' Apply filter to show only "SHOW" criteria
-    ThisWorkbook.activeSheet.Range("$A$7:$XFB$1356").AutoFilter Field:=63, Criteria1:="SHOW"
+    lastRow = GetLastUsedRow(ThisWorkbook.activeSheet, 7)
+    ThisWorkbook.activeSheet.Range("$A$7:$XFB$" & lastRow).AutoFilter Field:=63, Criteria1:="SHOW"
     
     ' Protect the sheet again with password
     On Error Resume Next

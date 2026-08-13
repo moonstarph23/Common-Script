@@ -8,7 +8,7 @@ Mermaid-compatible Markdown viewers render the flowcharts below.
 
 ## System Overview
 
-The source project originally contained 47 VBA components: 8 standard modules, 34 workbook/worksheet class modules, and 5 UserForms. The retained `.bas` and `.frm` exports contain 120 procedures and 104 direct internal call relationships.
+The source project originally contained 47 VBA components: 8 standard modules, 34 workbook/worksheet class modules, and 5 UserForms. The retained `.bas` and `.frm` exports contain 123 procedures and 119 direct internal call relationships.
 
 ```mermaid
 flowchart LR
@@ -143,7 +143,7 @@ flowchart TD
 | `GlobalVariables.bas` | Standard module | 17 |
 | `CallOverall.bas` | Standard module | 1 |
 | `ImportCode.bas` | Standard module | 1 |
-| `pnLSheet.bas` | Standard module | 35 |
+| `pnLSheet.bas` | Standard module | 38 |
 | `viewPL.frm` | UserForm | 9 |
 
 ## Procedure Inventory
@@ -226,6 +226,9 @@ flowchart TD
 | `GlobalVariables.bas` | `UpdateActualFYWithAllocationsNoDept` | Sub | Public | Callable routine |
 | `CallOverall.bas` | `OverAllPnl` | Sub | Public | Callable routine |
 | `ImportCode.bas` | `ImportAndReplaceModule` | Sub | Public | Callable routine |
+| `pnLSheet.bas` | `GetLastUsedRow` | Function | Private | Dynamic worksheet boundary helper |
+| `pnLSheet.bas` | `GetLastDataRow` | Function | Private | Dynamic FY data boundary helper |
+| `pnLSheet.bas` | `ValidatePnLTargetRows` | Function | Private | Pre-clear FY-to-P&L mapping validation |
 | `pnLSheet.bas` | `ClearPNL` | Sub | Public | Callable routine |
 | `pnLSheet.bas` | `ClearDeptPNL` | Sub | Public | Callable routine |
 | `pnLSheet.bas` | `updatePnL` | Sub | Public | Callable routine |
@@ -238,7 +241,7 @@ flowchart TD
 | `pnLSheet.bas` | `CopySheetStructureFast` | Function | Private | Callable routine |
 | `pnLSheet.bas` | `BulkBreakLinksAllSheets` | Sub | Private | Callable routine |
 | `pnLSheet.bas` | `BulkRemoveControlsAllSheets` | Sub | Private | Callable routine |
-| `pnLSheet.bas` | `BuildMasterDictionary` | Sub | Private | Callable routine |
+| `pnLSheet.bas` | `BuildMasterDictionary` | Function | Private | Callable routine |
 | `pnLSheet.bas` | `UpdatePnLForExportedSheets` | Sub | Private | Callable routine |
 | `pnLSheet.bas` | `BulkWriteToSheet` | Sub | Private | Callable routine |
 | `pnLSheet.bas` | `updatePnLbyDept` | Sub | Public | Callable routine |

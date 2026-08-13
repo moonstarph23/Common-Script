@@ -2,7 +2,7 @@
   "location": "Corporate",
   "source": "Testing/Journal20Template20v3.xlsm",
   "component_count": 14,
-  "procedure_count": 156,
+  "procedure_count": 159,
   "components": [
     {
       "filename": "tableContents.frm",
@@ -46,7 +46,7 @@
     },
     {
       "filename": "pnLSheet.bas",
-      "bytes": 230810
+      "bytes": 239336
     },
     {
       "filename": "viewPL.frm",
@@ -58,7 +58,7 @@
     },
     {
       "filename": "Module2.bas",
-      "bytes": 8526
+      "bytes": 8662
     }
   ],
   "forms": [
@@ -859,6 +859,82 @@
     [
       "Workbook_Open",
       "RegisterOCX"
+    ],
+    [
+      "ClearPNL",
+      "GetLastUsedRow"
+    ],
+    [
+      "ClearDeptPNL",
+      "GetLastUsedRow"
+    ],
+    [
+      "updatePnL",
+      "GetLastUsedRow"
+    ],
+    [
+      "updatePnL",
+      "GetLastDataRow"
+    ],
+    [
+      "updatePnL",
+      "ValidatePnLTargetRows"
+    ],
+    [
+      "BuildMasterDictionary",
+      "GetLastDataRow"
+    ],
+    [
+      "BuildMasterDictionary",
+      "GetLastUsedRow"
+    ],
+    [
+      "BuildMasterDictionary",
+      "ValidatePnLTargetRows"
+    ],
+    [
+      "UpdatePnLForExportedSheets",
+      "GetLastUsedRow"
+    ],
+    [
+      "UpdatePnLForExportedSheets",
+      "GetLastDataRow"
+    ],
+    [
+      "updatePnLbyDept",
+      "GetLastUsedRow"
+    ],
+    [
+      "updatePnLbyDept",
+      "GetLastDataRow"
+    ],
+    [
+      "updatePnLbyDept",
+      "ValidatePnLTargetRows"
+    ],
+    [
+      "FindRowByText",
+      "GetLastUsedRow"
+    ],
+    [
+      "updateManual",
+      "GetLastUsedRow"
+    ],
+    [
+      "updateManualExportedSheet",
+      "GetLastUsedRow"
+    ],
+    [
+      "CheckForManualChanges",
+      "GetLastUsedRow"
+    ],
+    [
+      "ApplyFilterSheetsToActiveSheet",
+      "GetLastUsedRow"
+    ],
+    [
+      "FilterSheetsNewWorkbook",
+      "GetLastUsedRow"
     ]
   ]
 }

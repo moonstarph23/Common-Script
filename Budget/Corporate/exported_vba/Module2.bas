@@ -33,7 +33,9 @@ Public Sub FilterSheets()
     
 
                
-            activeSheet.Range("$A$7:$XFB$1356").AutoFilter Field:=63, Criteria1:="SHOW"
+            lastRow = activeSheet.Cells(activeSheet.Rows.Count, "BK").End(xlUp).Row
+            If lastRow < 7 Then lastRow = 7
+            activeSheet.Range("$A$7:$XFB$" & lastRow).AutoFilter Field:=63, Criteria1:="SHOW"
 
 
    

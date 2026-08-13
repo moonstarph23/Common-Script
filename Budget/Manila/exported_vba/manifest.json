@@ -2,7 +2,7 @@
   "location": "Manila",
   "source": "Testing/Journal20Template20v2.xlsm",
   "component_count": 13,
-  "procedure_count": 120,
+  "procedure_count": 123,
   "components": [
     {
       "filename": "tableContents.frm",
@@ -50,7 +50,7 @@
     },
     {
       "filename": "pnLSheet.bas",
-      "bytes": 147367
+      "bytes": 155956
     },
     {
       "filename": "viewPL.frm",
@@ -715,6 +715,66 @@
     [
       "Workbook_Open",
       "RegisterOCX"
+    ],
+    [
+      "ClearPNL",
+      "GetLastUsedRow"
+    ],
+    [
+      "ClearDeptPNL",
+      "GetLastUsedRow"
+    ],
+    [
+      "updatePnL",
+      "GetLastUsedRow"
+    ],
+    [
+      "updatePnL",
+      "GetLastDataRow"
+    ],
+    [
+      "updatePnL",
+      "ValidatePnLTargetRows"
+    ],
+    [
+      "BuildMasterDictionary",
+      "GetLastDataRow"
+    ],
+    [
+      "BuildMasterDictionary",
+      "GetLastUsedRow"
+    ],
+    [
+      "BuildMasterDictionary",
+      "ValidatePnLTargetRows"
+    ],
+    [
+      "UpdatePnLForExportedSheets",
+      "GetLastUsedRow"
+    ],
+    [
+      "UpdatePnLForExportedSheets",
+      "GetLastDataRow"
+    ],
+    [
+      "updatePnLbyDept",
+      "GetLastUsedRow"
+    ],
+    [
+      "updatePnLbyDept",
+      "GetLastDataRow"
+    ],
+    [
+      "updatePnLbyDept",
+      "ValidatePnLTargetRows"
+    ],
+    [
+      "FindRowByText",
+      "GetLastUsedRow"
+    ],
+    [
+      "updateManual",
+      "GetLastUsedRow"
     ]
   ]
 }
