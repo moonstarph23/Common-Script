@@ -5,6 +5,9 @@ import glob
 import shutil
 
 
+CREATION_TIME_GRACE_SECONDS = 120
+
+
 def wait_for_opera_print_pdf(timeout: int, move_to_path: str = None) -> tuple:
     """
     Wait up to <timeout> seconds for an OperaPrint*.pdf to appear fully
@@ -14,7 +17,7 @@ def wait_for_opera_print_pdf(timeout: int, move_to_path: str = None) -> tuple:
         %LOCALAPPDATA%\\Microsoft\\Windows\\INetCache\\**\\OperaPrint*.pdf
 
     "Fully downloaded" means:
-        1. File was created after this function started
+        1. File was created no more than 2 minutes before this function started
         2. File exists and size > 0
         3. Size unchanged between two stats 2 seconds apart
         4. File is not locked by another process (os.open O_RDWR succeeds)
@@ -29,6 +32,7 @@ def wait_for_opera_print_pdf(timeout: int, move_to_path: str = None) -> tuple:
     Does not raise.
     """
     start_time = time.time()
+    earliest_creation_time = start_time - CREATION_TIME_GRACE_SECONDS
     local_app_data = os.environ.get('LOCALAPPDATA') or os.path.join(
         os.environ.get('USERPROFILE', ''), 'AppData', 'Local')
 
@@ -69,8 +73,8 @@ def wait_for_opera_print_pdf(timeout: int, move_to_path: str = None) -> tuple:
                 print(f"  Could not read creation time for {path}: {e}")
                 continue
 
-            if created_time < start_time:
-                print(f"  {os.path.basename(path)}: created before this run, ignoring.")
+            if created_time < earliest_creation_time:
+                print(f"  {os.path.basename(path)}: created more than 2 minutes before this run, ignoring.")
                 continue
 
             try:

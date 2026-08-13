@@ -12,7 +12,7 @@ SPEC.loader.exec_module(MODULE)
 
 
 class Clock:
-    def __init__(self, now=100.0):
+    def __init__(self, now=1000.0):
         self.now = now
 
     def time(self):
@@ -40,14 +40,26 @@ class WaitForOperaPrintPdfTests(unittest.TestCase):
 
         return result, open_mock
 
-    def test_ignores_pdf_created_before_function_started(self):
-        result, open_mock = self.run_wait(lambda path: 99.0)
+    def test_accepts_pdf_created_119_seconds_before_function_started(self):
+        result, open_mock = self.run_wait(lambda path: 881.0)
+
+        self.assertEqual((True, os.path.join("cache", "OperaPrint.pdf")), result)
+        open_mock.assert_called_once()
+
+    def test_accepts_pdf_created_exactly_120_seconds_before_function_started(self):
+        result, open_mock = self.run_wait(lambda path: 880.0)
+
+        self.assertEqual((True, os.path.join("cache", "OperaPrint.pdf")), result)
+        open_mock.assert_called_once()
+
+    def test_ignores_pdf_created_more_than_120_seconds_before_function_started(self):
+        result, open_mock = self.run_wait(lambda path: 879.0)
 
         self.assertEqual((False, None), result)
         open_mock.assert_not_called()
 
     def test_accepts_new_pdf_after_size_is_stable(self):
-        result, open_mock = self.run_wait(lambda path: 101.0)
+        result, open_mock = self.run_wait(lambda path: 1001.0)
 
         self.assertEqual((True, os.path.join("cache", "OperaPrint.pdf")), result)
         open_mock.assert_called_once()
