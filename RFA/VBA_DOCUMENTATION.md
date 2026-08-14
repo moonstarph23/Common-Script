@@ -1,6 +1,6 @@
 # RFA VBA Process Documentation
 
-**Source workbook:** `Testing/Employee Tracking System V6.0.xlsm`  
+**Source workbook:** `Testing/Macro.xlsm`  
 **Export folder:** `RFA/exported_vba`  
 **Analysis method:** Static inspection only; the macros were not run in Excel.
 
@@ -156,7 +156,8 @@ Many form events cancel and reschedule this timer. The workbook class also reset
 
 | Component | Type | Main responsibility |
 |---|---|---|
-| `MainWindow.frm` | UserForm | UI, roster loading, selection, employee filtering, history scanning, report creation, and PDF export |
+| `MainWindow.frm` | UserForm source | Importable form descriptor plus UI, roster loading, selection, filtering, report creation, and PDF export code |
+| `MainWindow.frx` | UserForm binary companion | Exact embedded control layout and binary properties required when importing `MainWindow.frm` |
 | `Module1.bas` | Standard module | Adds minimize/maximize styles to the UserForm window through Windows APIs |
 | `Module2.bas` | Standard module | Makes the UserForm appear as a taskbar application through Windows APIs |
 | `Module3.bas` | Standard module | Schedules, cancels, and performs inactivity shutdown |
@@ -164,7 +165,13 @@ Many form events cancel and reschedule this timer. The workbook class also reset
 | `manifest.json` | Export metadata | Component sizes, procedure count, form-control inventory, and direct calls |
 | `references.txt` | Reference placeholder | Matches the trimmed Budget export layout |
 
-The retained components contain 68 procedures and 125 detected form controls.
+The retained components contain 46 active or reachable procedures and 125 detected form controls.
+
+## Manual VBA Import
+
+Keep `MainWindow.frm` and `MainWindow.frx` together in the same directory. In the VBA editor, import `MainWindow.frm`; Excel reads the companion `.frx` automatically, so the `.frx` is not imported separately. Then import `Module1.bas`, `Module2.bas`, and `Module3.bas` individually.
+
+The exported form source contains `<REDACTED>` in place of the locally embedded roster password. Replace that placeholder only in the local destination workbook. The destination also needs Microsoft ListView/Common Controls support. `ThisWorkbook` and worksheet class modules are not included in this trimmed import set, so retain the destination workbook's class events and `Sheet1` report template or copy those separately from the source workbook.
 
 ## Important Procedure Groups
 
@@ -181,7 +188,7 @@ The retained components contain 68 procedures and 125 detected form controls.
 | Window integration | `AddToForm`, `AppTasklist` |
 | Timer | `SetTimer`, `StopTimer`, `ShutDown` |
 
-Several empty, commented-out, or test-oriented handlers remain in the project, including `cmdInsert_Click`, `cmdInsertFile_Click`, `cmdTrackEmpSL_Click`, `ThisIsForATest`, `Sample`, and unused button events. They are not part of the primary production flow above.
+The V6.0 cleanup removed 17 unreferenced procedures and five empty event handlers, along with disabled code that had been retained as full-line comments. Explanatory section and API comments were preserved. The retained procedures are either called by the application, wired to an existing form event, or used as a timer callback.
 
 ## External Dependencies
 
@@ -212,12 +219,15 @@ The documentation and source files were produced without executing the macros:
 flowchart LR
     XLSM["Testing workbook .xlsm"] --> VBAProject["Embedded vbaProject.bin"]
     VBAProject --> Extract["Decompress VBA source streams"]
-    Extract --> Keep["Keep .bas and .frm code components"]
+    VBAProject --> Designer["Extract MainWindow designer storage"]
+    Extract --> Keep["Write importable .bas and .frm files"]
+    Designer --> FRX["Build MainWindow.frx companion"]
     Extract --> Meta["Read PROJECT metadata and form controls"]
     Keep --> Folder["RFA/exported_vba"]
+    FRX --> Folder
     Meta --> Folder
     Folder --> Review["Static call and workflow analysis"]
     Review --> Docs["RFA/VBA_DOCUMENTATION.md"]
 ```
 
-Worksheet and workbook `.cls` modules and binary UserForm payloads were omitted to match the current trimmed exports under `Budget`. The original `.xlsm` remains the authoritative artifact for designer layout, embedded controls, and workbook/worksheet class events.
+Worksheet and workbook `.cls` modules remain omitted to match the trimmed export layout under `Budget`. The UserForm binary payload is now included as `MainWindow.frx`; its 90 designer streams match the embedded form byte-for-byte. `Testing/Macro.xlsm` remains authoritative for workbook/worksheet class events and the report worksheet template.

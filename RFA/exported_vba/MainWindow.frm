@@ -1,3 +1,15 @@
+VERSION 5.00
+Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} MainWindow 
+   OleObjectBlob   =   "MainWindow.frx":0000
+   Caption         =   "Employee Tracking System"
+   ClientHeight    =   9555.001
+   ClientLeft      =   45
+   ClientTop       =   375
+   ClientWidth     =   19890
+   ShowModal       =   0   'False
+   StartUpPosition =   1  'CenterOwner
+   TypeInfoVer     =   383
+End
 Attribute VB_Name = "MainWindow"
 Attribute VB_Base = "0{D9FF0D3E-8CE4-4324-A6B7-F934406198D4}{4BB0A439-0A87-417C-80BE-41445910C4FF}"
 Attribute VB_GlobalNameSpace = False
@@ -17,54 +29,6 @@ Dim NewShiftRightNow As String
 Dim VarListItem As Long
 Dim mIsLoadingData As Boolean
 Dim mHasValidRosterData As Boolean
-'Dim NewDateRightNow As String
-
-Private Sub cmdInsert_Click()
- Dim li As ListItem
- Dim msg
-'    If Len(Trim(txtNewGroup.Text)) = 0 Then
-'        msg = MsgBox("New Group must not Empty!", vbOKOnly + vbExclamation, "EISys Information!")
-'        txtNewGroup.SetFocus
-'        Exit Sub
-'    End If
-    
-'    If Len(Trim(txtFullName.Text)) = 0 Then
-'        msg = MsgBox("Full Name must not Empty!", vbOKOnly + vbExclamation, "EISys Information!")
-'        txtFullName.SetFocus
-'        Exit Sub
-'    End If
-   
-'    Set li = lvListTrainee.ListItems.Add(, , txtIDNumber.Text)
-'    li.SubItems(1) = txtFullName.Text
-    
-'    txtIDNumber.Text = ""
-'    txtFullName.Text = ""
-'    txtIDNumber.SetFocus
-    'li.SubItems(2) = mcolRecords(i).Current
-End Sub
-
-Private Sub cmdInsertFile_Click()
-
-End Sub
-
-Private Sub cmdRemove_Click()
-    Dim res As Integer
-     
-    If Not lvListTrainee.SelectedItem Is Nothing Then
-        res = MsgBox("This item will be permanently Deleted. Continue?", vbYesNo + vbDefaultButton2, "Delete")
-        
-        If res = vbNo Then
-            Exit Sub
-        Else
-            lvListTrainee.ListItems.Remove (lvListTrainee.SelectedItem.Index)
-        End If
-    ElseIf lvListTrainee.ListItems.Count = 0 Then
-        MsgBox "Nothing to Delete...", vbExclamation, "EISys Information!"
-    Else
-        MsgBox "Please Highlight the Item to Delete...", vbInformation, "EISys Information!"
-    End If
-End Sub
-
 Private Sub cmbDate_Change()
     If mIsLoadingData Then Exit Sub
     Call StopTimer
@@ -115,22 +79,10 @@ Dim NewStatus As String
 End Sub
 
 Private Sub cmdClose_Click()
-    'lvListTrainee.ListItems.Clear
-    'cmbPosition.Clear
-    'cmbDate.Clear
-    'cmbShift.Clear
-    'frmTrack.Visible = False
-    'ThisWorkbook.Saved = False
     Application.DisplayAlerts = False
     ThisWorkbook.Application.Quit
     ThisWorkbook.Close savechanges:=False
-    'End
 End Sub
-
-Private Sub cmdExit_Click()
-    End
-End Sub
-
 Private Sub cmdPrint_Click()
 Dim a As Long
 Dim b As Long
@@ -152,7 +104,6 @@ Dim NewShift As String
     
     For i = 1 To lvListTrainee.ListItems.Count
     
-        'if lvlisttrainee.ListItems(i)
         If lvListTrainee.ListItems(i).SubItems(3) = "First Cycle" Then
             lvAll.ListItems.Clear
         
@@ -179,8 +130,6 @@ Dim NewShift As String
                     li.SubItems(2) = lvListTrainee.ListItems(i).SubItems(4) 'lvFirstCycle.SelectedItem.SubItems(4)
                     NewDate = DateAdd("d", -l, cmbDate.Text)
                     li.SubItems(3) = NewDate & "-(" & NewStatus & ")"
-                    'li.SubItems(2) = lvListTrainee.ListItems(i).SubItems(4)
-                    'k = 0
                     l = l + 1
                 ElseIf IsNumeric(NewStatus) Then
                     k = 0
@@ -247,7 +196,6 @@ Dim NewShift As String
                             li.SubItems(2) = lvListTrainee.ListItems(i).SubItems(4) 'lvFirstCycle.SelectedItem.SubItems(4)
                             NewDate = DateAdd("d", -b, cmbDate.Text)
                             li.SubItems(3) = NewDate & "-(" & NewStatus & ")"
-                            'k = 0
                             b = b + 1
                         ElseIf IsNumeric(NewStatus) Then
                             d = 0
@@ -255,24 +203,7 @@ Dim NewShift As String
                         d = d - 1
                     Wend
                                 
-                    'c = lvAll.ListItems.Count
-                    'Ctr = 1
-                    'While c > 0
-                    '    If Ctr = 1 Then
-                    '        NewRemarks = lvAll.ListItems(c).SubItems(3)
-                    '        Ctr = 0
-                    '    ElseIf c = 1 Then
-                    '        NewRemarks = NewRemarks & "and " & lvAll.ListItems(c).SubItems(3)
-                    '    Else
-                    '        NewRemarks = NewRemarks & ", " & lvAll.ListItems(c).SubItems(3)
-                    '    End If
-                    '    c = c - 1
-                    'Wend
                                             
-                    'Set li = lvListofAbsent.ListItems.Add(, , lvFirstCycle.SelectedItem.Text)
-                    'li.SubItems(1) = lvFirstCycle.SelectedItem.SubItems(1)
-                    'li.SubItems(2) = NewShift
-                    'li.SubItems(3) = NewRemarks
                 
                 Else
                     NewStatus = Replace(lvSecondCycle.SelectedItem.SubItems(k), "-", "")
@@ -285,7 +216,6 @@ Dim NewShift As String
                         li.SubItems(2) = lvListTrainee.ListItems(i).SubItems(4) 'lvSecondCycle.SelectedItem.SubItems(4)
                         NewDate = DateAdd("d", -l, cmbDate.Text)
                         li.SubItems(3) = NewDate & "-(" & NewStatus & ")"
-                        'k = 0
                         l = l + 1
                     ElseIf IsNumeric(NewStatus) Then
                         k = 0
@@ -340,11 +270,9 @@ Dim Rand As Long
     Cells(3, 7).Value = NewShiftRightNow
     
     Rand = 7
-    'MsgBox (ws.Cells(Rand, 1).Value)
     Do While ws.Cells(Rand, 1).Value <> ""
         ws.Rows(Rand) = ""
         
-        'ws.Rows(Rand + 4, 1).RowHeight = 12.75
         
         With ws.Cells(Rand + 4, 1).Borders
             .LineStyle = xlNone
@@ -374,8 +302,6 @@ Dim Rand As Long
             .LineStyle = xlNone
         End With
         
-        'ws.Range("E" & Rand + 4).WrapText = True
-        'ws.Range("A" & Rand + 4 & ":E" & Rand + 4).EntireRow.AutoFit
         
         Rand = Rand + 1
     
@@ -388,10 +314,6 @@ Dim Rand As Long
         NewID = Mid(lvListofAbsent.ListItems(i).Text, 2, 7)
         NewName = Mid(lvListofAbsent.ListItems(i).Text, 11, 45)
     
-        'rng1.Offset(i, 0) = NewID
-        'rng1.Offset(i, 1) = NewName
-        'rng1.Offset(i, 2) = lvListofAbsent.ListItems(i).SubItems(1)
-        'rng1.Offset(i, 3) = lvListofAbsent.ListItems(i).SubItems(3)
         ws.Cells(i + 6, 1) = NewID
         ws.Cells(i + 6, 2) = NewName
         ws.Cells(i + 6, 3) = lvListofAbsent.ListItems(i).SubItems(1)
@@ -402,18 +324,9 @@ Dim Rand As Long
             ws.Rows(i + 6).RowHeight = 30
         Else
             If Len(lvListofAbsent.ListItems(i).SubItems(3)) < 20 Then
-                'ws.Cells(i + 4, 5) = vbNewLine & vbNewLine & lvListofAbsent.ListItems(i).SubItems(3) & vbNewLine & vbNewLine
-                'ws.Cells(i + 6, 5) = vbNewLine & lvListofAbsent.ListItems(i).SubItems(3) & vbNewLine
                 ws.Cells(i + 6, 5) = lvListofAbsent.ListItems(i).SubItems(3)
                 
-                'ws.Range("E" & Rand + 4).EntireRow.AutoFit
-                'ws.Range(i + 6).RowHeight = "50"
-                'ws.Range("E" & Rand + 4).EntireRow.AutoFit
                 ws.Rows(i + 6).RowHeight = 30
-                'ws.Rows("1:" & i + 6).EntireRow.RowHeight = 100
-            'ElseIf Len(lvListofAbsent.ListItems(i).SubItems(3)) < 40 Then
-            '    ws.Cells(i + 6, 5) = lvListofAbsent.ListItems(i).SubItems(3)
-            'ElseIf Len(lvListofAbsent.ListItems(i).SubItems(3)) > 40 Then
             Else
                 ws.Cells(i + 6, 5) = lvListofAbsent.ListItems(i).SubItems(3)
             End If
@@ -454,10 +367,7 @@ Dim Rand As Long
             .Weight = xlThin
         End With
     
-        'ws.Rows(i + 4).RowHeight = 45
         If Len(lvListofAbsent.ListItems(i).SubItems(3)) < 20 Then
-            'ws.Range("E" & i + 4).WrapText = True
-            'ws.Range("E" & i + 4).RowHeight = 40
         Else
             ws.Range("E" & i + 6).WrapText = True
             ws.Range("E" & i + 6).EntireRow.AutoFit
@@ -465,13 +375,9 @@ Dim Rand As Long
     
     Next i
     
-   'ThisWorkbook.Application.Visible = True
     
     
-    'Sheets("Sheet1").Visible = false
     
-    'MainWindow.Hide
-    'ws.PrintPreview
      
       Call cmSave_Click
       
@@ -480,32 +386,14 @@ Dim Rand As Long
     
     
     
-    'ThisWorkbook.Windows(1).Visible = False
-   ' ThisWorkbook.Application.Visible = False
     
     
     
     
-    'Application.Visible = False
-    'ThisWorkbook.Windows(1).Visible = False
     
-    'Application.Windows(1).Visible = False
-        'With Rng.Borders
-        '.LineStyle = xlContinuous
-        '.Color = vbRed
-        '.Weight = xlThin
-        'End With
-    'ActiveWorkbook.Save
-    'End If
 Exit Sub
 ErrHandler:
   msg = MsgBox("Cannot Proceed to Task! Call for an assistance.", vbExclamation, "ETS Guide!")
-End Sub
-
-Private Sub cmdTrackEmpSL_Click()
-End Sub
-Private Sub LoadDataFromExcel()
-    Call LoadStartupDataWithRetry
 End Sub
 Private Sub ClearAll()
     lblid.Caption = ""
@@ -630,32 +518,14 @@ Dim msg
     lvListTrainee.ListItems.Clear
     lvAll.ListItems.Clear
     lvListofAbsent.ListItems.Clear
-    'cmbDate.Text = "09/18/2016"
     For i = 1 To lvDate.ListItems.Count
         If lvDate.ListItems(i).Text = cmbDate.Text Then
             NewColumn = lvDate.ListItems(i).SubItems(1)
             NewCycle = lvDate.ListItems(i).SubItems(2)
-            'msg = MsgBox(NewColumn & "   " & NewCycle)
             i = lvDate.ListItems.Count
         End If
     Next i
     
-    'If optAll.Value = True Then
-    '    Call DisplayAllEmployeeFirstCycle
-    '
-    '    If lvListTrainee.ListItems.Count > 0 Then
-    '        lvListTrainee.SelectedItem.Selected = True
-    '        lvListTrainee.SelectedItem.EnsureVisible
-    '        Call lvListTrainee_Click
-    '        txtSearch.Enabled = True
-    '        Call FillAll
-    '        cmdPrint.Enabled = False
-    '    Else
-    '        cmdPrint.Enabled = False
-    '        msg = MsgBox("No Record Found!", vbOKOnly + vbInformation, "ETS Confirmation!")
-    '        cmdTrackNow.SetFocus
-    '    End If
-    'ElseIf optSL.Value = True Then
     
         If NewCycle = "First Cycle" Then
             Call FirstCycle
@@ -704,234 +574,23 @@ Dim msg
                 
             End If
         End If
-    'End If
     Call SetTimer
     ThisWorkbook.Sheets("Sheet1").Activate
     Application.Visible = False
     Range("x1") = cmbDate.Value
     
 End Sub
-
-Private Sub DisplayAllEmployeeFirstCycle()
-Dim i As Long
-Dim j As Long
-Dim x As Long
-Dim NewStatus As String
-Dim NewShiftFrom As Long
-Dim NewShiftTo As Long
-Dim msg
-Dim bFound As Boolean
-    
-    For i = 1 To lvFirstCycle.ListItems.Count
-        If lvFirstCycle.ListItems(i).Text = "-" Then
-        Else
-            Set li = lvAll.ListItems.Add(, , lvFirstCycle.ListItems(i).Text)
-            li.SubItems(1) = lvFirstCycle.ListItems(i).SubItems(1)
-            li.SubItems(2) = NewColumn
-            li.SubItems(3) = NewCycle
-            li.SubItems(4) = lvFirstCycle.ListItems(i).SubItems(NewColumn)
-        End If
-    Next i
-    
-    For i = 1 To lvSecondCycle.ListItems.Count
-        For j = 1 To lvAll.ListItems.Count
-            If lvAll.ListItems(j).Text = lvSecondCycle.ListItems(i).Text Then
-                j = lvAll.ListItems.Count
-                bFound = True
-            Else
-                bFound = False
-                j = lvAll.ListItems.Count
-            End If
-        Next j
-        
-        If bFound = False Then
-            If lvSecondCycle.ListItems(i).Text = "-" Then
-            Else
-                Set li = lvAll.ListItems.Add(, , lvSecondCycle.ListItems(i).Text)
-                li.SubItems(1) = lvSecondCycle.ListItems(i).SubItems(1)
-                li.SubItems(2) = NewColumn
-                li.SubItems(3) = NewCycle
-                li.SubItems(4) = lvSecondCycle.ListItems(i).SubItems(NewColumn)
-            End If
-        End If
-    Next i
-    
-    
-    If cmbShift.Text = "All Shift" Then
-        NewShiftFrom = "0000"
-        NewShiftTo = 2359
-    ElseIf cmbShift.Text = "Morning Shift" Then
-        NewShiftFrom = "0500"
-        NewShiftTo = 1200
-    ElseIf cmbShift.Text = "Day Shift" Then
-        NewShiftFrom = 1159
-        NewShiftTo = 1800
-    ElseIf cmbShift.Text = "Late Day Shift" Then
-        NewShiftFrom = 1759
-        NewShiftTo = 1930
-    ElseIf cmbShift.Text = "Night Shift" Then
-        NewShiftFrom = 1929
-        NewShiftTo = "2359"
-    ElseIf cmbShift.Text = "Late Night Shift" Then
-        NewShiftFrom = "0111"
-        NewShiftTo = "0500"
-    End If
-
-    If cmbShift.Text = "All Shift" Then
-        For j = 1 To 5
-            If j = 1 Then
-                NewShiftFrom = "0500"
-                NewShiftTo = 1200
-            ElseIf j = 2 Then
-                NewShiftFrom = 1159
-                NewShiftTo = 1800
-            ElseIf j = 3 Then
-                NewShiftFrom = 1759
-                NewShiftTo = 1930
-            ElseIf j = 4 Then
-                NewShiftFrom = 1929
-                NewShiftTo = "2359"
-            ElseIf j = 5 Then
-                NewShiftFrom = "0111"
-                NewShiftTo = "0500"
-            End If
-            
-        For i = 1 To lvAll.ListItems.Count
-            'NewStatus = Replace(lvSecondCycle.ListItems(i).SubItems(3), "-", "")
-            NewStatus = Mid(lvAll.ListItems(i).SubItems(4), 1, 4)
-            If IsNumeric(NewStatus) Then
-                If cmbPosition.Text = "All" Then
-                    If IsNumeric(NewStatus) Then
-                        If NewStatus > NewShiftFrom And NewStatus < NewShiftTo Then
-                            Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).Text)
-                            li.SubItems(1) = lvAll.ListItems(i).SubItems(1)
-                            li.SubItems(2) = NewColumn
-                            li.SubItems(3) = NewCycle
-                            li.SubItems(4) = lvAll.ListItems(i).SubItems(4)
-                        End If
-                    End If
-                Else
-                    If cmbPosition.Text = "Dealer" Then
-                        NewPosition = "DLR"
-                    ElseIf cmbPosition.Text = "Pit Supervisor" Then
-                        NewPosition = "SUP"
-                    ElseIf cmbPosition.Text = "Pit Manager" Then
-                        NewPosition = "PM"
-                    End If
-                
-                    If IsNumeric(NewStatus) Then
-                        If lvAll.ListItems(i).SubItems(1) = NewPosition Then
-                            If NewStatus > NewShiftFrom And NewStatus < NewShiftTo Then
-                                Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).Text)
-                                li.SubItems(1) = lvAll.ListItems(i).SubItems(1)
-                                li.SubItems(2) = NewColumn
-                                li.SubItems(3) = NewCycle
-                                li.SubItems(4) = lvAll.ListItems(i).SubItems(4)
-                            End If
-                        End If
-                    End If
-                
-                End If
-            Else 'THIS IS FOR THE VL,SL,EL,EVERYTHING
-                Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).Text)
-                li.SubItems(1) = lvAll.ListItems(i).SubItems(1)
-                li.SubItems(2) = NewColumn
-                li.SubItems(3) = NewCycle
-                li.SubItems(4) = lvAll.ListItems(i).SubItems(4)
-            End If
-        Next i
-            
-            
-        Next j
-    Else
-        For i = 1 To lvAll.ListItems.Count
-            'NewStatus = Replace(lvSecondCycle.ListItems(i).SubItems(3), "-", "")
-            NewStatus = Mid(lvAll.ListItems(i).SubItems(4), 1, 4)
-            If IsNumeric(NewStatus) Then
-                If cmbPosition.Text = "All" Then
-                    If IsNumeric(NewStatus) Then
-                        If NewStatus > NewShiftFrom And NewStatus < NewShiftTo Then
-                            Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).Text)
-                            li.SubItems(1) = lvAll.ListItems(i).SubItems(1)
-                            li.SubItems(2) = NewColumn
-                            li.SubItems(3) = NewCycle
-                            li.SubItems(4) = lvAll.ListItems(i).SubItems(4)
-                        End If
-                    End If
-                Else
-                    If cmbPosition.Text = "Dealer" Then
-                        NewPosition = "DLR"
-                    ElseIf cmbPosition.Text = "Pit Supervisor" Then
-                        NewPosition = "SUP"
-                    ElseIf cmbPosition.Text = "Pit Manager" Then
-                        NewPosition = "PM"
-                    End If
-                
-                    If IsNumeric(NewStatus) Then
-                        If lvAll.ListItems(i).SubItems(1) = NewPosition Then
-                            If NewStatus > NewShiftFrom And NewStatus < NewShiftTo Then
-                                Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).Text)
-                                li.SubItems(1) = lvAll.ListItems(i).SubItems(1)
-                                li.SubItems(2) = NewColumn
-                                li.SubItems(3) = NewCycle
-                                li.SubItems(4) = lvAll.ListItems(i).SubItems(4)
-                            End If
-                        End If
-                    End If
-                
-                End If
-            Else 'THIS IS FOR THE VL,SL,EL,EVERYTHING
-                Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).Text)
-                li.SubItems(1) = lvAll.ListItems(i).SubItems(1)
-                li.SubItems(2) = NewColumn
-                li.SubItems(3) = NewCycle
-                li.SubItems(4) = lvAll.ListItems(i).SubItems(4)
-                
-            End If
-        Next i
-    End If
-    
-    'THIS WILL INSERT ALL DATA FROM LVALL AND LVABSENT
-        
-End Sub
-
 Private Sub FirstCycle()
 Dim i As Long
 Dim j As Long
 Dim NewStatus As String
-'Dim NewShiftFrom As Long
 Dim NewShiftFrom As String
 Dim NewShiftTo As Long
 Dim msg
     
-    'If cmbShift.Text = "All Shift" Then
-    '    NewShiftFrom = "0559"
-    '    NewShiftTo = 2359
-    'ElseIf cmbShift.Text = "Morning Shift" Then
-    '    NewShiftFrom = "0559"
-    '    NewShiftTo = 1200
-    'ElseIf cmbShift.Text = "Day Shift" Then
-    '    NewShiftFrom = 1159
-    '    NewShiftTo = 1800
-    'ElseIf cmbShift.Text = "Night Shift" Then
-    '    NewShiftFrom = 1759
-    '    NewShiftTo = 2359
-    'End If
 
-    'If cmbShift.Text = "All Shift" Then
         For j = 1 To lvListofAvailableShift.ListItems.Count
         
-        'For j = 1 To 3
-        '    If j = 1 Then
-        '        NewShiftFrom = "0559"
-        '        NewShiftTo = 1200
-        '    ElseIf j = 2 Then
-        '        NewShiftFrom = 1159
-        '        NewShiftTo = 1800
-        '    ElseIf j = 3 Then
-        '        NewShiftFrom = 1759
-        '        NewShiftTo = 2359
-        '    End If
         
             If lvListofAvailableShift.ListItems(j).Checked = True Then
                 NewShiftFrom = lvListofAvailableShift.ListItems(j).Text
@@ -942,7 +601,6 @@ Dim msg
                     If IsNumeric(NewStatus) Then
                         If cmbPosition.Text = "All" Then
                             If IsNumeric(NewStatus) Then
-                                'If NewStatus > NewShiftFrom And NewStatus < NewShiftTo Then
                                 If NewStatus = NewShiftFrom Then
                                     Set li = lvAll.ListItems.Add(, , lvFirstCycle.ListItems(i).Text)
                                     li.SubItems(1) = lvFirstCycle.ListItems(i).SubItems(1)
@@ -962,7 +620,6 @@ Dim msg
                         
                             If IsNumeric(NewStatus) Then
                                 If lvFirstCycle.ListItems(i).SubItems(1) = NewPosition Then
-                                    'If NewStatus > NewShiftFrom And NewStatus < NewShiftTo Then
                                     If NewStatus = NewShiftFrom Then
                                         Set li = lvAll.ListItems.Add(, , lvFirstCycle.ListItems(i).Text)
                                         li.SubItems(1) = lvFirstCycle.ListItems(i).SubItems(1)
@@ -978,93 +635,15 @@ Dim msg
                 Next i
             End If
         Next j
-            'NewStatus = Mid(lvFirstCycle.ListItems(i).SubItems(NewColumn), 1, 4)
-            'If IsNumeric(NewStatus) Then
-            '    If cmbPosition.Text = "All" Then
-            '        If IsNumeric(NewStatus) Then
-            '            If NewStatus > NewShiftFrom And NewStatus < NewShiftTo Then
-            '                Set li = lvAll.ListItems.Add(, , lvFirstCycle.ListItems(i).Text)
-            '                li.SubItems(1) = lvFirstCycle.ListItems(i).SubItems(1)
-            '                li.SubItems(2) = NewColumn
-            '                li.SubItems(3) = NewCycle
-            '                li.SubItems(4) = lvFirstCycle.ListItems(i).SubItems(NewColumn)
-            '            End If
-            '        End If
-            '    Else
-            '        If cmbPosition.Text = "Dealer" Then
-            '            NewPosition = "DLR"
-            '        ElseIf cmbPosition.Text = "Pit Supervisor" Then
-            '            NewPosition = "SUP"
-            '        ElseIf cmbPosition.Text = "Pit Manager" Then
-            '            NewPosition = "PM"
-            '        End If
-            '
-            '        If IsNumeric(NewStatus) Then
-            '            If lvFirstCycle.ListItems(i).SubItems(1) = NewPosition Then
-            '                If NewStatus > NewShiftFrom And NewStatus < NewShiftTo Then
-            '                    Set li = lvAll.ListItems.Add(, , lvFirstCycle.ListItems(i).Text)
-            '                    li.SubItems(1) = lvFirstCycle.ListItems(i).SubItems(1)
-            '                    li.SubItems(2) = NewColumn
-            '                    li.SubItems(3) = NewCycle
-            '                    li.SubItems(4) = lvFirstCycle.ListItems(i).SubItems(NewColumn)
-            '                End If
-            '            End If
-            '        End If
-            '
-            '    End If
-            'End If
-        'Next i
             
             
-        'Next j
     
-    'Else
-    '    For i = 1 To lvFirstCycle.ListItems.Count
-            'NewStatus = Replace(lvSecondCycle.ListItems(i).SubItems(3), "-", "")
-    '        NewStatus = Mid(lvFirstCycle.ListItems(i).SubItems(NewColumn), 1, 4)
-    '        If IsNumeric(NewStatus) Then
-    '            If cmbPosition.Text = "All" Then
-    '                If IsNumeric(NewStatus) Then
-    '                    If NewStatus > NewShiftFrom And NewStatus < NewShiftTo Then
-    '                        Set li = lvAll.ListItems.Add(, , lvFirstCycle.ListItems(i).Text)
-    '                        li.SubItems(1) = lvFirstCycle.ListItems(i).SubItems(1)
-    '                        li.SubItems(2) = NewColumn
-    '                        li.SubItems(3) = NewCycle
-    '                        li.SubItems(4) = lvFirstCycle.ListItems(i).SubItems(NewColumn)
-    '                    End If
-    '                End If
-    '            Else
-    '                If cmbPosition.Text = "Dealer" Then
-    '                    NewPosition = "DLR"
-    '                ElseIf cmbPosition.Text = "Pit Supervisor" Then
-    '                    NewPosition = "SUP"
-    '                ElseIf cmbPosition.Text = "Pit Manager" Then
-    '                    NewPosition = "PM"
-    '                End If
-    '
-    '                If IsNumeric(NewStatus) Then
-    '                    If lvFirstCycle.ListItems(i).SubItems(1) = NewPosition Then
-    '                        If NewStatus > NewShiftFrom And NewStatus < NewShiftTo Then
-    '                            Set li = lvAll.ListItems.Add(, , lvFirstCycle.ListItems(i).Text)
-    '                            li.SubItems(1) = lvFirstCycle.ListItems(i).SubItems(1)
-    '                            li.SubItems(2) = NewColumn
-    '                            li.SubItems(3) = NewCycle
-    '                            li.SubItems(4) = lvFirstCycle.ListItems(i).SubItems(NewColumn)
-    '                        End If
-    '                    End If
-    '                End If
-    '
-    '            End If
-    '        End If
-    '    Next i
-    'End If
 
 End Sub
 
 Private Sub SecondCycle()
 Dim i As Long
 Dim NewStatus As String
-'Dim NewShiftFrom As Long
 Dim NewShiftFrom As String
 Dim NewShiftTo As Long
 Dim msg
@@ -1073,14 +652,12 @@ Dim msg
         
             If lvListofAvailableShift.ListItems(j).Checked = True Then
                 NewShiftFrom = lvListofAvailableShift.ListItems(j).Text
-                'NewShiftFrom = Format(NewShiftFrom, "0000")
                 
                 For i = 1 To lvSecondCycle.ListItems.Count
                     NewStatus = Mid(lvSecondCycle.ListItems(i).SubItems(NewColumn), 1, 4)
                     If IsNumeric(NewStatus) = True Then
                         If cmbPosition.Text = "All" Then
                             If IsNumeric(NewStatus) Then
-                                'If NewStatus > NewShiftFrom And NewStatus < NewShiftTo Then
                                 If NewStatus = NewShiftFrom Then
                                     
                                     Set li = lvAll.ListItems.Add(, , lvSecondCycle.ListItems(i).Text)
@@ -1101,7 +678,6 @@ Dim msg
                         
                             If IsNumeric(NewStatus) = True Then
                                 If lvSecondCycle.ListItems(i).SubItems(1) = NewPosition Then
-                                    'If NewStatus > NewShiftFrom And NewStatus < NewShiftTo Then
                                     If NewStatus = NewShiftFrom Then
                                         Set li = lvAll.ListItems.Add(, , lvSecondCycle.ListItems(i).Text)
                                         li.SubItems(1) = lvSecondCycle.ListItems(i).SubItems(1)
@@ -1118,115 +694,12 @@ Dim msg
             End If
         Next j
 
-    'If cmbShift.Text = "All Shift" Then
-    '    NewShiftFrom = "0559"
-    '    NewShiftTo = 2359
-    'ElseIf cmbShift.Text = "Morning Shift" Then
-    '    NewShiftFrom = "0559"
-    '    NewShiftTo = 1200
-    'ElseIf cmbShift.Text = "Day Shift" Then
-    '    NewShiftFrom = 1159
-    '    NewShiftTo = 1800
-    'ElseIf cmbShift.Text = "Night Shift" Then
-    '    NewShiftFrom = 1759
-    '    NewShiftTo = 2359
-    'End If
 
 
-    'If cmbShift.Text = "All Shift" Then
-    '    For j = 1 To 3
-    '        If j = 1 Then
-    '            NewShiftFrom = "0559"
-    '            NewShiftTo = 1200
-    '        ElseIf j = 2 Then
-    '            NewShiftFrom = 1159
-    '            NewShiftTo = 1800
-    '        ElseIf j = 3 Then
-    '            NewShiftFrom = 1759
-    '            NewShiftTo = 2359
-    '        End If
             
-    '        For i = 1 To lvSecondCycle.ListItems.Count
-    '            'NewStatus = Replace(lvSecondCycle.ListItems(i).SubItems(3), "-", "")
-    '            NewStatus = Mid(lvSecondCycle.ListItems(i).SubItems(NewColumn), 1, 4)
-    '            If IsNumeric(NewStatus) Then
-    '                If cmbPosition.Text = "All" Then
-    '                    If IsNumeric(NewStatus) Then
-    '                        If NewStatus > NewShiftFrom And NewStatus < NewShiftTo Then
-    '                            Set li = lvAll.ListItems.Add(, , lvSecondCycle.ListItems(i).Text)
-    '                            li.SubItems(1) = lvSecondCycle.ListItems(i).SubItems(1)
-    '                            li.SubItems(2) = NewColumn
-    '                            li.SubItems(3) = NewCycle
-    '                            li.SubItems(4) = lvSecondCycle.ListItems(i).SubItems(NewColumn)
-    '                        End If
-    '                    End If
-    '                Else
-    '                    If cmbPosition.Text = "Dealer" Then
-    '                        NewPosition = "DLR"
-    '                    ElseIf cmbPosition.Text = "Pit Supervisor" Then
-    '                        NewPosition = "SUP"
-    '                    ElseIf cmbPosition.Text = "Pit Manager" Then
-    '                        NewPosition = "PM"
-    '                    End If
-    '
-    '                    If IsNumeric(NewStatus) Then
-    '                        If lvSecondCycle.ListItems(i).SubItems(1) = NewPosition Then
-    '                            If NewStatus > NewShiftFrom And NewStatus < NewShiftTo Then
-    '                                Set li = lvAll.ListItems.Add(, , lvSecondCycle.ListItems(i).Text)
-    '                                li.SubItems(1) = lvSecondCycle.ListItems(i).SubItems(1)
-    '                                li.SubItems(2) = NewColumn
-    '                                li.SubItems(3) = NewCycle
-    '                                li.SubItems(4) = lvSecondCycle.ListItems(i).SubItems(NewColumn)
-    '                            End If
-    '                        End If
-    '                    End If
-    '
-    '                End If
-    '            End If
-    '        Next i
             
-    '    Next j
-    'Else
     
-    '    For i = 1 To lvSecondCycle.ListItems.Count
-            'NewStatus = Replace(lvSecondCycle.ListItems(i).SubItems(3), "-", "")
-    '        NewStatus = Mid(lvSecondCycle.ListItems(i).SubItems(NewColumn), 1, 4)
-    '        If IsNumeric(NewStatus) Then
-    '            If cmbPosition.Text = "All" Then
-    '                If IsNumeric(NewStatus) Then
-    '                    If NewStatus > NewShiftFrom And NewStatus < NewShiftTo Then
-    '                        Set li = lvAll.ListItems.Add(, , lvSecondCycle.ListItems(i).Text)
-    '                        li.SubItems(1) = lvSecondCycle.ListItems(i).SubItems(1)
-    '                        li.SubItems(2) = NewColumn
-    '                        li.SubItems(3) = NewCycle
-    '                        li.SubItems(4) = lvSecondCycle.ListItems(i).SubItems(NewColumn)
-    '                    End If
-    '                End If
-    '            Else
-    '                If cmbPosition.Text = "Dealer" Then
-    '                    NewPosition = "DLR"
-    '                ElseIf cmbPosition.Text = "Pit Supervisor" Then
-    '                    NewPosition = "SUP"
-    '                ElseIf cmbPosition.Text = "Pit Manager" Then
-    '                    NewPosition = "PM"
-    '                End If
                 
-    '                If IsNumeric(NewStatus) Then
-    '                    If lvSecondCycle.ListItems(i).SubItems(1) = NewPosition Then
-    '                        If NewStatus > NewShiftFrom And NewStatus < NewShiftTo Then
-    '                            Set li = lvAll.ListItems.Add(, , lvSecondCycle.ListItems(i).Text)
-    '                            li.SubItems(1) = lvSecondCycle.ListItems(i).SubItems(1)
-    '                            li.SubItems(2) = NewColumn
-    '                            li.SubItems(3) = NewCycle
-    '                            li.SubItems(4) = lvSecondCycle.ListItems(i).SubItems(NewColumn)
-    '                        End If
-    '                    End If
-    '                End If
-    '
-    '            End If
-    '        End If
-    '    Next i
-    'End If
 End Sub
 
 Private Sub LookForRecordFirst()
@@ -1300,10 +773,6 @@ Dim xbFound As Boolean
     For i = 1 To lvAll.ListItems.Count
         For j = 1 To lvSecondCycle.ListItems.Count
             If lvAll.ListItems(i).Text = lvSecondCycle.ListItems(j).Text Then
-                'If lvAll.ListItems(i).SubItems(3) = "First Cycle" Then
-                'ElseIf lvAll.ListItems(i).SubItems(3) = "Second Cycle" Then
-                'End If
-                'MsgBox (lvAll.ListItems(i).SubItems(4))
                 SecondCtr = lvAll.ListItems(i).SubItems(2) - 1
                 While SecondCtr > 1
                     NewStatus = Replace(lvSecondCycle.ListItems(j).SubItems(SecondCtr), "-", "")
@@ -1342,9 +811,6 @@ Dim xbFound As Boolean
                 If bFound = False Then
                     For k = 1 To lvFirstCycle.ListItems.Count
                         If lvAll.ListItems(i).Text = lvFirstCycle.ListItems(k).Text Then
-                            'If lvAll.ListItems(i).SubItems(3) = "First Cycle" Then
-                            'ElseIf lvAll.ListItems(i).SubItems(3) = "Second Cycle" Then
-                            'End If
                             SecondCtr = 15
                             While SecondCtr > 1
                                 NewStatus = Replace(lvFirstCycle.ListItems(k).SubItems(SecondCtr), "-", "")
@@ -1397,7 +863,6 @@ Dim NewStatus As String
         If lvDate.ListItems(i).Text = cmbDate.Text Then
             NewColumnS = lvDate.ListItems(i).SubItems(1)
             NewCycleS = lvDate.ListItems(i).SubItems(2)
-            'msg = MsgBox(NewColumn & "   " & NewCycle)
             i = lvDate.ListItems.Count
         End If
     Next i
@@ -1442,7 +907,6 @@ Dim NewStatus As String
             End If
             
         For i = 1 To lvFirstCycle.ListItems.Count
-            'NewStatus = Replace(lvSecondCycle.ListItems(i).SubItems(3), "-", "")
             NewStatus = Mid(lvFirstCycle.ListItems(i).SubItems(NewColumnS), 1, 4)
             If IsNumeric(NewStatus) Then
                 If cmbPosition.Text = "All" Then
@@ -1494,7 +958,6 @@ Dim NewStatus As String
         Next j
     Else
         For i = 1 To lvFirstCycle.ListItems.Count
-            'NewStatus = Replace(lvSecondCycle.ListItems(i).SubItems(3), "-", "")
             NewStatus = Mid(lvFirstCycle.ListItems(i).SubItems(NewColumnS), 1, 4)
             If IsNumeric(NewStatus) Then
                 If cmbPosition.Text = "All" Then
@@ -1558,7 +1021,6 @@ Dim NewStatus As String
         If lvDate.ListItems(i).Text = cmbDate.Text Then
             NewColumnS = lvDate.ListItems(i).SubItems(1)
             NewCycleS = lvDate.ListItems(i).SubItems(2)
-            'msg = MsgBox(NewColumn & "   " & NewCycle)
             i = lvDate.ListItems.Count
         End If
     Next i
@@ -1603,7 +1065,6 @@ Dim NewStatus As String
             End If
             
         For i = 1 To lvFirstCycle.ListItems.Count
-            'NewStatus = Replace(lvSecondCycle.ListItems(i).SubItems(3), "-", "")
             NewStatus = Mid(lvSecondCycle.ListItems(i).SubItems(NewColumnS), 1, 4)
             If IsNumeric(NewStatus) Then
                 If cmbPosition.Text = "All" Then
@@ -1656,7 +1117,6 @@ Dim NewStatus As String
     Else
         
         For i = 1 To lvFirstCycle.ListItems.Count
-            'NewStatus = Replace(lvSecondCycle.ListItems(i).SubItems(3), "-", "")
             If i > lvSecondCycle.ListItems.Count Then
             Else
                 NewStatus = Mid(lvSecondCycle.ListItems(i).SubItems(NewColumnS), 1, 4)
@@ -1711,719 +1171,6 @@ Dim NewStatus As String
     End If
     
 End Sub
-
-
-Private Sub ThisIsForATest()
-Dim i As Long
-Dim x As Long
-Dim Y As Long
-Dim z As Long
-Dim NewCt As Long
-Dim bFound As Boolean
-Dim NewTime As String
-Dim NewStatus As String
-Dim NewPosition As String
-
-Dim NewNumber1 As String
-Dim NewCycle1 As String
-Dim NewNumber2 As String
-Dim NewCycle2 As String
-
-Dim ctr As Long
-'Call ReadDataFromCloseFile
-
-    If cmbDate.Text = "" Then
-        Exit Sub
-    End If
-    Call ClearAll
-    lvListTrainee.ListItems.Clear
-        
-    'lvAll.ListItems.Clear
-    For x = 1 To lvFirstCycle.ListItems.Count
-        lvAll.ListItems.Clear
-        
-        For i = 1 To lvDate.ListItems.Count
-            If lvDate.ListItems(i).Text = cmbDate.Text Then
-                NewNumber1 = lvDate.ListItems(i).SubItems(1)
-                NewCycle1 = lvDate.ListItems(i).SubItems(2)
-                If i < 15 Then
-                    Set li = lvAll.ListItems.Add(, , lvDate.ListItems(i).Text)
-                    li.SubItems(1) = lvFirstCycle.ListItems(x).Text
-                    li.SubItems(2) = lvFirstCycle.ListItems(x).SubItems(1)
-                    li.SubItems(3) = lvFirstCycle.ListItems(x).SubItems(i + 1)
-                    li.SubItems(4) = lvDate.ListItems(i).SubItems(2)
-                Else
-                    Set li = lvAll.ListItems.Add(, , lvDate.ListItems(i).Text)
-                    li.SubItems(1) = lvSecondCycle.ListItems(x).Text
-                    li.SubItems(2) = lvSecondCycle.ListItems(x).SubItems(1)
-                    li.SubItems(3) = lvSecondCycle.ListItems(x).SubItems(i - 13)
-                    li.SubItems(4) = lvDate.ListItems(i).SubItems(2)
-                End If
-                i = lvDate.ListItems.Count + 1
-            Else
-                If i < 15 Then
-                    Set li = lvAll.ListItems.Add(, , lvDate.ListItems(i).Text)
-                    li.SubItems(1) = lvFirstCycle.ListItems(x).Text
-                    li.SubItems(2) = lvFirstCycle.ListItems(x).SubItems(1)
-                    li.SubItems(3) = lvFirstCycle.ListItems(x).SubItems(i + 1)
-                    li.SubItems(4) = lvDate.ListItems(i).SubItems(2)
-                Else
-                    For Y = 1 To lvSecondCycle.ListItems.Count
-                        If lvFirstCycle.ListItems(x).Text = lvSecondCycle.ListItems(Y).Text Then
-                            Set li = lvAll.ListItems.Add(, , lvDate.ListItems(i).Text)
-                            li.SubItems(1) = lvSecondCycle.ListItems(x).Text
-                            li.SubItems(2) = lvSecondCycle.ListItems(x).SubItems(1)
-                            li.SubItems(3) = lvSecondCycle.ListItems(x).SubItems(i - 13)
-                            li.SubItems(4) = lvDate.ListItems(i).SubItems(2)
-                            Y = lvSecondCycle.ListItems.Count
-                        End If
-                    Next Y
-                End If
-            End If
-            
-            
-            
-        Next i
-        
-        i = lvAll.ListItems.Count
-            NewShiftHour = Replace(lvAll.ListItems(i).SubItems(3), "-", "")
-            
-            If Len(Trim(NewShiftHour)) = "" Then
-            Else
-                NewTime = Mid(lvAll.ListItems(i).SubItems(3), 1, 4)
-                If IsNumeric(NewTime) = True Then
-                    If cmbShift.Text = "Morning Shift" Then
-                        If Int(NewTime) > "0559" And Int(NewTime) < 1200 Then
-                            While i > 0
-                            
-                                If cmbPosition.Text = "All" Then
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Or UCase(NewStatus) = "PMLV" Or UCase(NewStatus) = "PCL" Then
-                                            Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                            li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                            li.SubItems(2) = NewNumber1
-                                            li.SubItems(3) = NewCycle1
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                Else
-                                    If cmbPosition.Text = "Dealer" Then
-                                        NewPosition = "DLR"
-                                    ElseIf cmbPosition.Text = "Pit Supervisor" Then
-                                        NewPosition = "SUP"
-                                    ElseIf cmbPosition.Text = "Pit Manager" Then
-                                        NewPosition = "PM"
-                                    End If
-                                    
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Then
-                                            If NewPosition = lvAll.ListItems(i).SubItems(2) Then
-                                                Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                                li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                                li.SubItems(2) = NewNumber1
-                                                li.SubItems(3) = NewCycle1
-                                            End If
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                
-                                End If
-                                
-                                i = i - 1
-                            Wend
-                            
-                        End If
-                    ElseIf cmbShift.Text = "Day Shift" Then
-                        If Int(NewTime) < 1800 Then
-                            While i > 0
-                            
-                                If cmbPosition.Text = "All" Then
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Or UCase(NewStatus) = "PMLV" Or UCase(NewStatus) = "PCL" Then
-                                            Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                            li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                            li.SubItems(2) = NewNumber1
-                                            li.SubItems(3) = NewCycle1
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                Else
-                                    If cmbPosition.Text = "Dealer" Then
-                                        NewPosition = "DLR"
-                                    ElseIf cmbPosition.Text = "Pit Supervisor" Then
-                                        NewPosition = "SUP"
-                                    ElseIf cmbPosition.Text = "Pit Manager" Then
-                                        NewPosition = "PM"
-                                    End If
-                                    
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Then
-                                            If NewPosition = lvAll.ListItems(i).SubItems(2) Then
-                                                Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                                li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                                li.SubItems(2) = NewNumber1
-                                                li.SubItems(3) = NewCycle1
-                                            End If
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                
-                                End If
-                                
-                                i = i - 1
-                            Wend
-                            
-                        End If
-                    ElseIf cmbShift.Text = "Late Day Shift" Then
-                        If Int(NewTime) < 1930 Then
-                            While i > 0
-                            
-                                If cmbPosition.Text = "All" Then
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Or UCase(NewStatus) = "PMLV" Or UCase(NewStatus) = "PCL" Then
-                                            Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                            li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                            li.SubItems(2) = NewNumber1
-                                            li.SubItems(3) = NewCycle1
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                Else
-                                    If cmbPosition.Text = "Dealer" Then
-                                        NewPosition = "DLR"
-                                    ElseIf cmbPosition.Text = "Pit Supervisor" Then
-                                        NewPosition = "SUP"
-                                    ElseIf cmbPosition.Text = "Pit Manager" Then
-                                        NewPosition = "PM"
-                                    End If
-                                    
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Then
-                                            If NewPosition = lvAll.ListItems(i).SubItems(2) Then
-                                                Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                                li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                                li.SubItems(2) = NewNumber1
-                                                li.SubItems(3) = NewCycle1
-                                            End If
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                
-                                End If
-                                
-                                i = i - 1
-                            Wend
-                            
-                        End If
-                    ElseIf cmbShift.Text = "Night Shift" Then
-                        If Int(NewTime) < "2359" Then
-                            While i > 0
-                            
-                                If cmbPosition.Text = "All" Then
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Or UCase(NewStatus) = "PMLV" Or UCase(NewStatus) = "PCL" Then
-                                            Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                            li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                            li.SubItems(2) = NewNumber1
-                                            li.SubItems(3) = NewCycle1
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                Else
-                                    If cmbPosition.Text = "Dealer" Then
-                                        NewPosition = "DLR"
-                                    ElseIf cmbPosition.Text = "Pit Supervisor" Then
-                                        NewPosition = "SUP"
-                                    ElseIf cmbPosition.Text = "Pit Manager" Then
-                                        NewPosition = "PM"
-                                    End If
-                                    
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Or UCase(NewStatus) = "PMLV" Or UCase(NewStatus) = "PCL" Then
-                                            If NewPosition = lvAll.ListItems(i).SubItems(2) Then
-                                                Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                                li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                                li.SubItems(2) = NewNumber1
-                                                li.SubItems(3) = NewCycle1
-                                            End If
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                
-                                
-                                End If
-                                
-                                i = i - 1
-                            Wend
-                            
-                        End If
-                    ElseIf cmbShift.Text = "Late Night Shift" Then
-                        If Int(NewTime) > "0111" And Int(NewTime) < "0500" Then
-                            While i > 0
-                            
-                                If cmbPosition.Text = "All" Then
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Or UCase(NewStatus) = "PMLV" Or UCase(NewStatus) = "PCL" Then
-                                            Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                            li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                            li.SubItems(2) = NewNumber1
-                                            li.SubItems(3) = NewCycle1
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                Else
-                                    If cmbPosition.Text = "Dealer" Then
-                                        NewPosition = "DLR"
-                                    ElseIf cmbPosition.Text = "Pit Supervisor" Then
-                                        NewPosition = "SUP"
-                                    ElseIf cmbPosition.Text = "Pit Manager" Then
-                                        NewPosition = "PM"
-                                    End If
-                                    
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Then
-                                            If NewPosition = lvAll.ListItems(i).SubItems(2) Then
-                                                Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                                li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                                li.SubItems(2) = NewNumber1
-                                                li.SubItems(3) = NewCycle1
-                                            End If
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                
-                                
-                                End If
-                                
-                                i = i - 1
-                            Wend
-                            
-                        End If
-                    
-                    End If
-                Else
-                End If
-            End If
-            
-            
-        
-        
-        
-    Next x
-    
-    NewCt = 0
-    For x = 165 To 185 'lvSecondCycle.ListItems.Count
-        If lvSecondCycle.ListItems(x).Text = "[P006131] CALENDAS, Normita" Then
-            NewCt = x
-        End If
-        lvAll.ListItems.Clear
-        For z = 1 To lvFirstCycle.ListItems.Count
-            If InStr(1, lvFirstCycle.ListItems(z).Text, lvSecondCycle.ListItems(x).Text, vbTextCompare) Then
-                bFound = True
-                z = lvFirstCycle.ListItems.Count
-            Else
-                bFound = False
-            End If
-        Next z
-        
-        If bFound = False Then
-            For i = 1 To lvDate.ListItems.Count
-                If lvDate.ListItems(i).Text = cmbDate.Text Then
-                    If i < 15 Then
-                        
-                        Set li = lvAll.ListItems.Add(, , lvDate.ListItems(i).Text)
-                        li.SubItems(1) = lvSecondCycle.ListItems(x).Text
-                        li.SubItems(2) = lvSecondCycle.ListItems(x).SubItems(1)
-                        li.SubItems(3) = "-"
-                        li.SubItems(4) = lvDate.ListItems(i).SubItems(2)
-                    Else
-                        Set li = lvAll.ListItems.Add(, , lvDate.ListItems(i).Text)
-                        li.SubItems(1) = lvSecondCycle.ListItems(x).Text
-                        li.SubItems(2) = lvSecondCycle.ListItems(x).SubItems(1)
-                        li.SubItems(3) = lvSecondCycle.ListItems(x).SubItems(i - 13)
-                        li.SubItems(4) = lvDate.ListItems(i).SubItems(2)
-                    End If
-                    i = lvDate.ListItems.Count + 1
-                Else
-                    If i < 15 Then
-                        Set li = lvAll.ListItems.Add(, , lvDate.ListItems(i).Text)
-                        li.SubItems(1) = lvSecondCycle.ListItems(x).Text
-                        li.SubItems(2) = lvSecondCycle.ListItems(x).SubItems(1)
-                        li.SubItems(3) = "-"
-                        li.SubItems(4) = lvDate.ListItems(i).SubItems(2)
-                    Else
-                        For Y = 1 To lvSecondCycle.ListItems.Count
-                            'If lvFirstCycle.ListItems(x).Text = lvSecondCycle.ListItems(y).Text Then
-                                Set li = lvAll.ListItems.Add(, , lvDate.ListItems(i).Text)
-                                li.SubItems(1) = lvSecondCycle.ListItems(x).Text
-                                li.SubItems(2) = lvSecondCycle.ListItems(x).SubItems(1)
-                                li.SubItems(3) = lvSecondCycle.ListItems(x).SubItems(i - 13)
-                                li.SubItems(4) = lvDate.ListItems(i).SubItems(2)
-                                Y = lvSecondCycle.ListItems.Count
-                            'End If
-                        Next Y
-                    End If
-                End If
-            Next i
-            
-        i = lvAll.ListItems.Count
-            NewShiftHour = Replace(lvAll.ListItems(i).SubItems(3), "-", "")
-            
-            If Len(Trim(NewShiftHour)) = "" Then
-            Else
-                NewTime = Mid(lvAll.ListItems(i).SubItems(3), 1, 4)
-                If IsNumeric(NewTime) = True Then
-                    If cmbShift.Text = "Morning Shift" Then
-                        If Int(NewTime) > "0559" And Int(NewTime) < 1200 Then
-                            While i > 0
-                            
-                                If cmbPosition.Text = "All" Then
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Or UCase(NewStatus) = "PMLV" Or UCase(NewStatus) = "PCL" Then
-                                            Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                            li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                Else
-                                    If cmbPosition.Text = "Dealer" Then
-                                        NewPosition = "DLR"
-                                    ElseIf cmbPosition.Text = "Pit Supervisor" Then
-                                        NewPosition = "SUP"
-                                    ElseIf cmbPosition.Text = "Pit Manager" Then
-                                        NewPosition = "PM"
-                                    End If
-                                    
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Or UCase(NewStatus) = "PMLV" Or UCase(NewStatus) = "PCL" Then
-                                            If NewPosition = lvAll.ListItems(i).SubItems(2) Then
-                                                Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                                li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                            End If
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                
-                                
-                                End If
-                                
-                                i = i - 1
-                            Wend
-                            
-                        End If
-                    ElseIf cmbShift.Text = "Day Shift" Then
-                        If Int(NewTime) < 1800 Then
-                            While i > 0
-                            
-                                If cmbPosition.Text = "All" Then
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Or UCase(NewStatus) = "PMLV" Or UCase(NewStatus) = "PCL" Then
-                                            Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                            li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                Else
-                                    If cmbPosition.Text = "Dealer" Then
-                                        NewPosition = "DLR"
-                                    ElseIf cmbPosition.Text = "Pit Supervisor" Then
-                                        NewPosition = "SUP"
-                                    ElseIf cmbPosition.Text = "Pit Manager" Then
-                                        NewPosition = "PM"
-                                    End If
-                                    
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Or UCase(NewStatus) = "PMLV" Or UCase(NewStatus) = "PCL" Then
-                                            If NewPosition = lvAll.ListItems(i).SubItems(2) Then
-                                                Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                                li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                            End If
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                
-                                
-                                End If
-                                
-                                i = i - 1
-                            Wend
-                            
-                        End If
-                    ElseIf cmbShift.Text = "Late Day Shift" Then
-                        If Int(NewTime) < 1930 Then
-                            While i > 0
-                            
-                                If cmbPosition.Text = "All" Then
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Or UCase(NewStatus) = "PMLV" Or UCase(NewStatus) = "PCL" Then
-                                            Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                            li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                Else
-                                    If cmbPosition.Text = "Dealer" Then
-                                        NewPosition = "DLR"
-                                    ElseIf cmbPosition.Text = "Pit Supervisor" Then
-                                        NewPosition = "SUP"
-                                    ElseIf cmbPosition.Text = "Pit Manager" Then
-                                        NewPosition = "PM"
-                                    End If
-                                    
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Or UCase(NewStatus) = "PMLV" Or UCase(NewStatus) = "PCL" Then
-                                            If NewPosition = lvAll.ListItems(i).SubItems(2) Then
-                                                Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                                li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                            End If
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                
-                                
-                                End If
-                                
-                                i = i - 1
-                            Wend
-                            
-                        End If
-                    ElseIf cmbShift.Text = "Night Shift" Then
-                        If Int(NewTime) < "2359" Then
-                            While i > 0
-                            
-                                If cmbPosition.Text = "All" Then
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Or UCase(NewStatus) = "PMLV" Or UCase(NewStatus) = "PCL" Then
-                                            Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                            li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                Else
-                                    If cmbPosition.Text = "Dealer" Then
-                                        NewPosition = "DLR"
-                                    ElseIf cmbPosition.Text = "Pit Supervisor" Then
-                                        NewPosition = "SUP"
-                                    ElseIf cmbPosition.Text = "Pit Manager" Then
-                                        NewPosition = "PM"
-                                    End If
-                                    
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Or UCase(NewStatus) = "PMLV" Or UCase(NewStatus) = "PCL" Then
-                                            If NewPosition = lvAll.ListItems(i).SubItems(2) Then
-                                                Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                                li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                            End If
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                
-                                
-                                End If
-                                
-                                i = i - 1
-                            Wend
-                            
-                        End If
-                    ElseIf cmbShift.Text = "Late Night Shift" Then
-                        If Int(NewTime) > "0111" And Int(NewTime) < "0500" Then
-                            While i > 0
-                            
-                                If cmbPosition.Text = "All" Then
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Or UCase(NewStatus) = "PMLV" Or UCase(NewStatus) = "PCL" Then
-                                            Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                            li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                Else
-                                    If cmbPosition.Text = "Dealer" Then
-                                        NewPosition = "DLR"
-                                    ElseIf cmbPosition.Text = "Pit Supervisor" Then
-                                        NewPosition = "SUP"
-                                    ElseIf cmbPosition.Text = "Pit Manager" Then
-                                        NewPosition = "PM"
-                                    End If
-                                    
-                                    ctr = i - 1
-                                    If ctr > 1 Then
-                                        NewStatus = Replace(lvAll.ListItems(ctr).SubItems(3), "-", "")
-                                        If UCase(NewStatus) = "REST" Or UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Or UCase(NewStatus) = "LVCOV100" Or UCase(NewStatus) = "LVCOV50" Or UCase(NewStatus) = "PLV" Then
-                                            
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "MAT" Or UCase(NewStatus) = "PMLV" Or UCase(NewStatus) = "PCL" Then
-                                            If NewPosition = lvAll.ListItems(i).SubItems(2) Then
-                                                Set li = lvListTrainee.ListItems.Add(, , lvAll.ListItems(i).SubItems(1))
-                                                li.SubItems(1) = lvAll.ListItems(i).SubItems(2)
-                                            End If
-                                            i = 0
-                                        Else
-                                            i = 0
-                                        End If
-                                    End If
-                                
-                                
-                                End If
-                                
-                                i = i - 1
-                            Wend
-                            
-                        End If
-                    
-                    End If
-                Else
-                End If
-            End If
-            
-        End If
-        
-        
-        
-        
-        
-        
-    Next x
-
-
-    If lvListTrainee.ListItems.Count > 0 Then
-        lvListTrainee.SelectedItem.Selected = True
-        lvListTrainee.SelectedItem.EnsureVisible
-        Call lvListTrainee_Click
-        txtSearch.Enabled = True
-    Else
-        msg = MsgBox("No Record Found!", vbOKOnly + vbInformation, "ETS System")
-    End If
-    'THIS IS FOR SORTING THE DATE
-
-    
-        '.ColumnHeaders.Add , , "Date", 100
-        '.ColumnHeaders.Add , , "Name", 100
-        '.ColumnHeaders.Add , , "Name", 100
-        '.ColumnHeaders.Add , , "Shift", 100
-        '.ColumnHeaders.Add , , "Cycle", 150
-
-    'For i = 1 To lvFirstCycle.ListItems.cout
-        
-    'Next i
-    'msg = MsgBox(NewCt)
-    Call FillAll
-
-End Sub
-
 Private Sub FillAll()
     Dim NewDate As Date
     
@@ -2458,323 +1205,7 @@ Private Sub FillAll()
     lblday27.Caption = DateAdd("d", 26, NewDate)
     lblday28.Caption = DateAdd("d", 27, NewDate)
     
-    'lblday1.Caption = lvDate.ListItems(1).Text
 End Sub
-
-Private Sub Sample()
-Dim i As Long
-Dim x As Long
-Dim NewCtr As Long
-Dim NewDate As Date
-Dim NewSubItem As Integer
-Dim NewUsedListView As String
-Dim NewShiftHour  As String
-Dim NewTime As String
-Dim NewPosition As String
-Dim NewInsert As Long
-Dim NewStatus As String
-Dim msg
-
-    lvListTrainee.ListItems.Clear
-    
-    For i = 1 To lvDate.ListItems.Count
-        If cmbDate.Text = lvDate.ListItems(i).Text Then
-            NewDate = lvDate.ListItems(i).Text
-            NewSubItem = lvDate.ListItems(i).SubItems(1)
-            NewUsedListView = lvDate.ListItems(i).SubItems(2)
-         i = lvDate.ListItems.Count
-        End If
-    Next i
-
-
-'msg = MsgBox(NewDate & " " & NewSubItem & " " & NewUsedListView)
-
-If NewUsedListView = "First Cycle" Then
-    NewInsert = 0
-    
-    If NewSubItem = 2 Then
-        msg = MsgBox("Cannot Proceed to Task! Previous Cycle doesn't Exist anymore.", vbOKOnly + vbExclamation, "ETS Guide!")
-        Exit Sub
-    End If
-    
-    For i = 1 To lvFirstCycle.ListItems.Count
-        NewShiftHour = Replace(lvFirstCycle.ListItems(i).SubItems(NewSubItem), "-", "")
-        If Len(Trim(NewShiftHour)) = "" Then
-        Else
-            NewTime = Mid(NewShiftHour, 1, 4)
-            If IsNumeric(NewShiftHour) = True Then
-                If cmbShift.Text = "Morning Shift" Then
-                    If Int(NewTime) > "0559" And Int(NewTime) < 1200 Then
-                        If cmbPosition.Text = "All" Then
-                            'Set li = lvListTrainee.ListItems.Add(, , lvFirstCycle.ListItems(i).Text)
-                            'li.SubItems(1) = lvFirstCycle.ListItems(i).SubItems(1)
-                            NewCtr = NewSubItem
-                            For x = 1 To 14
-                                If NewCtr > 1 Then
-                                    NewStatus = Replace(lvFirstCycle.ListItems(i).SubItems(NewSubItem - x), "-", "")
-                                    If UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Then
-                                    ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Then
-                                        NewInsert = 1
-                                        x = 14
-                                    ElseIf IsNumeric(NewStatus) = True Then
-                                        x = 14
-                                    ElseIf Len(Trim(NewStatus)) = "" Then
-                                        x = 14
-                                    End If
-                                    NewCtr = NewSubItem - x
-                                End If
-                            Next x
-                            
-                            'NewInsert = 1
-                        Else
-                            If cmbPosition.Text = "Dealer" Then
-                                NewPosition = "DLR"
-                            ElseIf cmbPosition.Text = "Pit Supervisor" Then
-                                NewPosition = "SUP"
-                            End If
-                            
-                            If lvFirstCycle.ListItems(i).SubItems(1) = NewPosition Then
-                                'Set li = lvListTrainee.ListItems.Add(, , lvFirstCycle.ListItems(i).Text)
-                                'li.SubItems(1) = lvFirstCycle.ListItems(i).SubItems(1)
-                                
-                                NewCtr = NewSubItem
-                                For x = 1 To 14
-                                    If NewCtr > 1 Then
-                                        NewStatus = Replace(lvFirstCycle.ListItems(i).SubItems(NewSubItem - x), "-", "")
-                                        If UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Then
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Then
-                                            NewInsert = 1
-                                            x = 14
-                                        ElseIf IsNumeric(NewStatus) = True Then
-                                            x = 14
-                                        ElseIf Len(Trim(NewStatus)) = "" Then
-                                            x = 14
-                                        End If
-                                        NewCtr = NewSubItem - x
-                                    End If
-                                Next x
-                            End If
-                        End If
-                    End If
-                ElseIf cmbShift.Text = "Day Shift" Then
-                    NewTime = Mid(NewShiftHour, 1, 4)
-                    If NewTime < 1800 Then
-                        If cmbPosition.Text = "All" Then
-                            'Set li = lvListTrainee.ListItems.Add(, , lvFirstCycle.ListItems(i).Text)
-                            'li.SubItems(1) = lvFirstCycle.ListItems(i).SubItems(1)
-                            NewCtr = NewSubItem
-                            For x = 1 To 14
-                                If NewCtr > 1 Then
-                                    NewStatus = Replace(lvFirstCycle.ListItems(i).SubItems(NewSubItem - x), "-", "")
-                                    If UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Then
-                                    ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Then
-                                        NewInsert = 1
-                                        x = 14
-                                    ElseIf IsNumeric(NewStatus) = True Then
-                                        x = 14
-                                    ElseIf Len(Trim(NewStatus)) = "" Then
-                                        x = 14
-                                    End If
-                                    NewCtr = NewSubItem - x
-                                End If
-                            Next x
-                        Else
-                            If cmbPosition.Text = "Dealer" Then
-                                NewPosition = "DLR"
-                            ElseIf cmbPosition.Text = "Pit Supervisor" Then
-                                NewPosition = "SUP"
-                            End If
-                            If lvFirstCycle.ListItems(i).SubItems(1) = NewPosition Then
-                                'Set li = lvListTrainee.ListItems.Add(, , lvFirstCycle.ListItems(i).Text)
-                                'li.SubItems(1) = lvFirstCycle.ListItems(i).SubItems(1)
-                                NewCtr = NewSubItem
-                                For x = 1 To 14
-                                    If NewCtr > 1 Then
-                                        NewStatus = Replace(lvFirstCycle.ListItems(i).SubItems(NewSubItem - x), "-", "")
-                                        If UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Then
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Then
-                                            NewInsert = 1
-                                            x = 14
-                                        ElseIf IsNumeric(NewStatus) = True Then
-                                            x = 14
-                                        ElseIf Len(Trim(NewStatus)) = "" Then
-                                            x = 14
-                                        End If
-                                        NewCtr = NewSubItem - x
-                                    End If
-                                Next x
-                            
-                            End If
-                        End If
-                    End If
-                ElseIf cmbShift.Text = "Late Day Shift" Then
-                    NewTime = Mid(NewShiftHour, 1, 4)
-                    If NewTime < 1930 Then
-                        If cmbPosition.Text = "All" Then
-                            'Set li = lvListTrainee.ListItems.Add(, , lvFirstCycle.ListItems(i).Text)
-                            'li.SubItems(1) = lvFirstCycle.ListItems(i).SubItems(1)
-                            NewCtr = NewSubItem
-                            For x = 1 To 14
-                                If NewCtr > 1 Then
-                                    NewStatus = Replace(lvFirstCycle.ListItems(i).SubItems(NewSubItem - x), "-", "")
-                                    If UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Then
-                                    ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Then
-                                        NewInsert = 1
-                                        x = 14
-                                    ElseIf IsNumeric(NewStatus) = True Then
-                                        x = 14
-                                    ElseIf Len(Trim(NewStatus)) = "" Then
-                                        x = 14
-                                    End If
-                                    NewCtr = NewSubItem - x
-                                End If
-                            Next x
-                        Else
-                            If cmbPosition.Text = "Dealer" Then
-                                NewPosition = "DLR"
-                            ElseIf cmbPosition.Text = "Pit Supervisor" Then
-                                NewPosition = "SUP"
-                            End If
-                            If lvFirstCycle.ListItems(i).SubItems(1) = NewPosition Then
-                                'Set li = lvListTrainee.ListItems.Add(, , lvFirstCycle.ListItems(i).Text)
-                                'li.SubItems(1) = lvFirstCycle.ListItems(i).SubItems(1)
-                                NewCtr = NewSubItem
-                                For x = 1 To 14
-                                    If NewCtr > 1 Then
-                                        NewStatus = Replace(lvFirstCycle.ListItems(i).SubItems(NewSubItem - x), "-", "")
-                                        If UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Then
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Then
-                                            NewInsert = 1
-                                            x = 14
-                                        ElseIf IsNumeric(NewStatus) = True Then
-                                            x = 14
-                                        ElseIf Len(Trim(NewStatus)) = "" Then
-                                            x = 14
-                                        End If
-                                        NewCtr = NewSubItem - x
-                                    End If
-                                Next x
-                            
-                            End If
-                        End If
-                    End If
-                ElseIf cmbShift.Text = "Night Shift" Then
-                    If NewTime < "2359" Then
-                        If cmbPosition.Text = "All" Then
-                            'Set li = lvListTrainee.ListItems.Add(, , lvFirstCycle.ListItems(i).Text)
-                            'li.SubItems(1) = lvFirstCycle.ListItems(i).SubItems(1)
-                            NewCtr = NewSubItem
-                            For x = 1 To 14
-                                If NewCtr > 1 Then
-                                    NewStatus = Replace(lvFirstCycle.ListItems(i).SubItems(NewSubItem - x), "-", "")
-                                    If UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Then
-                                    ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Then
-                                        NewInsert = 1
-                                        x = 14
-                                    ElseIf IsNumeric(NewStatus) = True Then
-                                        x = 14
-                                    ElseIf Len(Trim(NewStatus)) = "" Then
-                                        x = 14
-                                    End If
-                                    NewCtr = NewSubItem - x
-                                End If
-                            Next x
-                        Else
-                            If cmbPosition.Text = "Dealer" Then
-                                NewPosition = "DLR"
-                            ElseIf cmbPosition.Text = "Pit Supervisor" Then
-                                NewPosition = "SUP"
-                            End If
-                            If lvFirstCycle.ListItems(i).SubItems(1) = NewPosition Then
-                                NewCtr = NewSubItem
-                                For x = 1 To 14
-                                    If NewCtr > 1 Then
-                                        NewStatus = Replace(lvFirstCycle.ListItems(i).SubItems(NewSubItem - x), "-", "")
-                                        If UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Then
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Then
-                                            NewInsert = 1
-                                            x = 14
-                                        ElseIf IsNumeric(NewStatus) = True Then
-                                            x = 14
-                                        ElseIf Len(Trim(NewStatus)) = "" Then
-                                            x = 14
-                                        End If
-                                        NewCtr = NewSubItem - x
-                                    End If
-                                Next x
-                            End If
-                        End If
-                    End If
-                ElseIf cmbShift.Text = "Late Night Shift" Then
-                    If NewTime > "0111" And NewTime < "0500" Then
-                        If cmbPosition.Text = "All" Then
-                            'Set li = lvListTrainee.ListItems.Add(, , lvFirstCycle.ListItems(i).Text)
-                            'li.SubItems(1) = lvFirstCycle.ListItems(i).SubItems(1)
-                            NewCtr = NewSubItem
-                            For x = 1 To 14
-                                If NewCtr > 1 Then
-                                    NewStatus = Replace(lvFirstCycle.ListItems(i).SubItems(NewSubItem - x), "-", "")
-                                    If UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Then
-                                    ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Then
-                                        NewInsert = 1
-                                        x = 14
-                                    ElseIf IsNumeric(NewStatus) = True Then
-                                        x = 14
-                                    ElseIf Len(Trim(NewStatus)) = "" Then
-                                        x = 14
-                                    End If
-                                    NewCtr = NewSubItem - x
-                                End If
-                            Next x
-                        Else
-                            If cmbPosition.Text = "Dealer" Then
-                                NewPosition = "DLR"
-                            ElseIf cmbPosition.Text = "Pit Supervisor" Then
-                                NewPosition = "SUP"
-                            End If
-                            If lvFirstCycle.ListItems(i).SubItems(1) = NewPosition Then
-                                NewCtr = NewSubItem
-                                For x = 1 To 14
-                                    If NewCtr > 1 Then
-                                        NewStatus = Replace(lvFirstCycle.ListItems(i).SubItems(NewSubItem - x), "-", "")
-                                        If UCase(NewStatus) = "BER" Or UCase(NewStatus) = "ALWP" Or UCase(NewStatus) = "NWH" Or UCase(NewStatus) = "BIR" Or UCase(NewStatus) = "EL" Or UCase(NewStatus) = "SOLO" Or UCase(NewStatus) = "VL" Then
-                                        ElseIf UCase(NewStatus) = "AWOL" Or UCase(NewStatus) = "SL" Or UCase(NewStatus) = "SHSL" Or UCase(NewStatus) = "LI" Then
-                                            NewInsert = 1
-                                            x = 14
-                                        ElseIf IsNumeric(NewStatus) = True Then
-                                            x = 14
-                                        ElseIf Len(Trim(NewStatus)) = "" Then
-                                            x = 14
-                                        End If
-                                        NewCtr = NewSubItem - x
-                                    End If
-                                Next x
-                            End If
-                        End If
-                    End If
-                End If
-                
-                'Set li = lvListTrainee.ListItems.Add(, , lvFirstCycle.ListItems(i).Text)
-                'li.SubItems(1) = lvFirstCycle.ListItems(i).SubItems(1)
-            Else
-            End If
-        End If
-        
-        If NewInsert = 1 Then
-            Set li = lvListTrainee.ListItems.Add(, , lvFirstCycle.ListItems(i).Text)
-            li.SubItems(1) = lvFirstCycle.ListItems(i).SubItems(1)
-            NewInsert = 0
-        End If
-        
-    Next i
-End If
-
-End Sub
-
-Private Sub frmNewGroup_Click()
-
-End Sub
-
 Private Sub cmSave_Click()
     On Error GoTo ExportError
 
@@ -2835,47 +1266,17 @@ ExportError:
 End Sub
 
 Private Sub CommandButton1_Click()
-    'Call CallDatabaseLoc
-    'Call SaveToWorksheet
     Application.ScreenUpdating = True
     Application.EnableEvents = True
-    'ActiveWindow.Visible = True
     Application.Windows(1).Visible = True
     Application.Visible = True
 End Sub
-
-
-Private Sub CommandButton2_Click()
-'Dim msg
-'    ThisWorkbook.Windows(1).Visible = True
-    'Application.Visible = True
-'msg = MsgBox("The name of the active window is " & ActiveWindow.Caption)
-
-'ThisWorkbook.Windows(1).Visible = False
-End Sub
-
-Private Sub CommandButton3_Click()
-    ThisWorkbook.Application.Visible = True
-End Sub
-
-
-
-Private Sub lvDate_BeforeLabelEdit(Cancel As Integer)
-
-End Sub
-
-Private Sub lvListofAvailableShift_BeforeLabelEdit(Cancel As Integer)
-
-End Sub
-
 Private Sub lvListTrainee_Click()
     If Not lvListTrainee.SelectedItem Is Nothing Then
         VarListItem = lvListTrainee.SelectedItem.Index
         Call LoadData
     ElseIf lvListTrainee.ListItems.Count = 0 Then
-        'MsgBox "Nothing to Delete...", vbExclamation, "EISys Information!"
     Else
-        'MsgBox "Please Highlight the Item to Delete...", vbInformation, "EISys Information!"
     End If
 End Sub
 
@@ -2885,19 +1286,14 @@ Dim i As Long
 Dim bFound1 As Boolean
 Dim bFound2 As Boolean
 Dim VarNum As Long
-    'msg = MsgBox(lvListTrainee.SelectedItem.Text)
     Call ClearShifts
     Call DefaultBackground
     
     For i = 1 To lvFirstCycle.ListItems.Count
-            'If InStr(1, lvFirstCycle.ListItems(i).Text, lvListTrainee.SelectedItem.Text, vbTextCompare) Then
             If InStr(1, lvFirstCycle.ListItems(i).Text, lvListTrainee.ListItems(VarListItem).Text, vbTextCompare) Then
                 bFound1 = True
-                'z = lvFirstCycle.ListItems.Count
                 lvFirstCycle.ListItems(i).Selected = True
-                'lvFirstCycle.ListItems(i).EnsureVisible
                 VarNum = lvFirstCycle.SelectedItem.Index
-                'VarNum = VarListItem
                 i = lvFirstCycle.ListItems.Count
             Else
                 bFound1 = False
@@ -2926,10 +1322,8 @@ Dim VarNum As Long
     For i = 1 To lvSecondCycle.ListItems.Count
             If InStr(1, lvSecondCycle.ListItems(i).Text, lvListTrainee.ListItems(VarListItem).Text, vbTextCompare) Then
                 bFound2 = True
-                'z = lvFirstCycle.ListItems.Count
                 lvSecondCycle.ListItems(i).Selected = True
                 VarNum = lvSecondCycle.SelectedItem.Index
-                'VarNum = VarListItem
                 i = lvSecondCycle.ListItems.Count
             Else
                 bFound2 = False
@@ -3026,62 +1420,7 @@ Private Sub LoadColor()
     End If
     
     
-'"&H80000004&"
 End Sub
-'Private Sub txtIDNumber_Enter()
-'    cmdInsert.Default = True
-'End Sub
-
-Private Sub TextBox1_Change()
-
-End Sub
-
-Private Sub lvListTrainee_KeyDown(KeyCode As Integer, ByVal Shift As Integer)
-    'If lvListTrainee.ListItems.Count = 0 Then
-    'Else
-    '    If KeyCode = vbKeyDown Then
-    '        If VarListItem = lvListTrainee.ListItems.Count Then
-    '            VarListItem = lvListTrainee.ListItems.Count
-    '        Else
-    '            VarListItem = lvListTrainee.SelectedItem.Index + 1
-    '        End If
-    '    ElseIf KeyCode = vbKeyUp Then
-    '        If VarListItem = 1 Then
-    '            VarListItem = 1
-    '        Else
-    '            VarListItem = lvListTrainee.SelectedItem.Index - 1
-    '        End If
-    '    ElseIf KeyCode = vbKeyEnd Then
-    '        VarListItem = lvListTrainee.ListItems.Count
-    '    ElseIf KeyCode = vbKeyHome Then
-    '        VarListItem = 1
-    '    End If
-        
-    '    Call LoadData
-    'End If
-    
-End Sub
-
-Private Sub optAll_Click()
-    lvListTrainee.ListItems.Clear
-    txtSearch.Enabled = False
-    txtSearch.Text = ""
-    cmbDate.Enabled = False
-    cmbPosition.Enabled = False
-    cmbShift.Enabled = False
-    Call ClearAll
-End Sub
-
-Private Sub optSL_Click()
-    lvListTrainee.ListItems.Clear
-    txtSearch.Enabled = False
-    txtSearch.Text = ""
-    cmbDate.Enabled = True
-    cmbPosition.Enabled = True
-    cmbShift.Enabled = True
-    Call ClearAll
-End Sub
-
 Private Sub txtSearch_Change()
 Dim msg
 Dim i As Long
@@ -3110,47 +1449,9 @@ Dim bFound As Boolean
     Call SetTimer
 
 End Sub
-
-Private Sub txtSearch_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
-
-    'If lvListTrainee.ListItems.Count = 0 Then
-    'Else
-    '    If KeyCode = KeyCodeConstants.vbKeyDown Then
-    '        If VarListItem = lvListTrainee.ListItems.Count Then
-    '            VarListItem = lvListTrainee.ListItems.Count
-    '        Else
-    '            VarListItem = VarListItem + 1
-    '        End If
-    '        KeyCode = 0
-    '    ElseIf KeyCode = KeyCodeConstants.vbKeyUp Then
-    '        If VarListItem = 1 Then
-    '            VarListItem = 1
-    '        Else
-    '            VarListItem = VarListItem - 1
-    '        End If
-    '        KeyCode = 0
-    '    ElseIf KeyCode = KeyCodeConstants.vbKeyEnd Then
-    '        VarListItem = lvListTrainee.ListItems.Count
-    '        KeyCode = 0
-    '    ElseIf KeyCode = KeyCodeConstants.vbKeyHome Then
-    '        VarListItem = 1
-    '        KeyCode = 0
-    '    End If
-    '    Call LoadData
-    'End If
-End Sub
-
-'Private Sub txtIDNumber_Exit(ByVal Cancel As MSForms.ReturnBoolean)
-'    cmdInsert.Default = False
-'End Sub
-
 Private Sub UserForm_Activate()
     AddToForm MIN_BOX
-    'Application.Visible = False
-    'ThisWorkbook.Windows(1).Visible = False
     
-    'ThisWorkbook.Application.Visible = False
-    'ThisWorkbook.Application.VBE.MainWindow.Visible = False
     AppTasklist Me
 End Sub
 
@@ -3160,7 +1461,6 @@ Dim NewDate As String
 Dim bFound As Boolean
 Dim startupErrorDescription As String
 
-    'optSL.Value = True
     On Error GoTo ErrHandler
     lvAll.Visible = False
     lvListofAbsent.Visible = False
@@ -3237,9 +1537,7 @@ Dim startupErrorDescription As String
     End With
     
     
-    'txtDate.Text = Format(Date, "MM/DD/YYYY")
     lvListTrainee.ListItems.Clear
-    'frmTrack.Visible = False
     If Not LoadStartupDataWithRetry() Then
         SetTrackingEnabled False
     End If
@@ -3260,23 +1558,6 @@ ErrHandler:
         startupErrorDescription, _
         vbCritical, "RFA Startup"
 End Sub
-Private Sub CallDatabaseLoc()
-    Dim firstRosterPath As String
-    Dim secondRosterPath As String
-    Dim errorMessage As String
-
-    If Not TryLoadConfiguration(firstRosterPath, secondRosterPath, errorMessage) Then
-        Err.Raise vbObjectError + 701, "CallDatabaseLoc", errorMessage
-    End If
-
-    NewDatabaseLoc1 = firstRosterPath
-    NewDatabaseLoc2 = secondRosterPath
-End Sub
-
-Sub ReadDataFromCloseFile()
-    Call LoadStartupDataWithRetry
-End Sub
-
 Private Function LoadStartupDataWithRetry() As Boolean
     Dim errorMessage As String
     Dim userChoice As VbMsgBoxResult
@@ -3757,18 +2038,12 @@ Private Function BuildLoadError( _
 End Function
 
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
-    'Application.Visible = True
-    'ThisWorkbook.Close savechanges:=False
-    'ThisWorkbook.Close savechanges:=False
-    '.DisplayAlerts = False
     ThisWorkbook.Application.Quit
     ThisWorkbook.Close savechanges = False
     
 End Sub
 
 Private Sub UserForm_Terminate()
-    'ActiveWorkbook.Close
     ThisWorkbook.Application.Quit
     ThisWorkbook.Close savechanges = False
-    'Application.Visible = True
 End Sub

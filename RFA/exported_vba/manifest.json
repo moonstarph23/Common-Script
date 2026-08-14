@@ -1,16 +1,16 @@
 {
   "location": "RFA",
-  "source": "Testing/Employee Tracking System V6.0.xlsm",
+  "source": "Testing/Macro.xlsm",
   "component_count": 4,
-  "procedure_count": 68,
+  "procedure_count": 46,
   "components": [
     {
       "filename": "MainWindow.frm",
-      "bytes": 175391
+      "bytes": 79412
     },
     {
       "filename": "Module1.bas",
-      "bytes": 1518
+      "bytes": 1466
     },
     {
       "filename": "Module2.bas",
@@ -18,7 +18,7 @@
     },
     {
       "filename": "Module3.bas",
-      "bytes": 1552
+      "bytes": 549
     }
   ],
   "forms": [
@@ -729,10 +729,6 @@
     ],
     [
       "cmdTrackNow_Click",
-      "DisplayAllEmployeeFirstCycle"
-    ],
-    [
-      "cmdTrackNow_Click",
       "FillAll"
     ],
     [
@@ -764,14 +760,6 @@
       "StopTimer"
     ],
     [
-      "CommandButton1_Click",
-      "CallDatabaseLoc"
-    ],
-    [
-      "CommandButton1_Click",
-      "SaveToWorksheet"
-    ],
-    [
       "LoadData",
       "ClearShifts"
     ],
@@ -782,10 +770,6 @@
     [
       "LoadData",
       "LoadColor"
-    ],
-    [
-      "LoadDataFromExcel",
-      "LoadStartupDataWithRetry"
     ],
     [
       "LoadStartupDataWithRetry",
@@ -804,52 +788,12 @@
       "LoadData"
     ],
     [
-      "lvListTrainee_KeyDown",
-      "LoadData"
-    ],
-    [
-      "optAll_Click",
-      "ClearAll"
-    ],
-    [
-      "optSL_Click",
-      "ClearAll"
-    ],
-    [
-      "ReadDataFromCloseFile",
-      "LoadStartupDataWithRetry"
-    ],
-    [
       "SaveToWorksheet",
       "cmSave_Click"
     ],
     [
       "SaveToWorksheet",
       "for"
-    ],
-    [
-      "ShutDown",
-      "SetTimerToRefresh"
-    ],
-    [
-      "ShutDown",
-      "StopTimerToRefresh"
-    ],
-    [
-      "ThisIsForATest",
-      "ClearAll"
-    ],
-    [
-      "ThisIsForATest",
-      "FillAll"
-    ],
-    [
-      "ThisIsForATest",
-      "lvListTrainee_Click"
-    ],
-    [
-      "ThisIsForATest",
-      "ReadDataFromCloseFile"
     ],
     [
       "txtSearch_Change",
@@ -862,10 +806,14 @@
     [
       "txtSearch_Change",
       "StopTimer"
-    ],
-    [
-      "txtSearch_KeyDown",
-      "LoadData"
     ]
+  ],
+  "form_assets": [
+    {
+      "form": "MainWindow",
+      "filename": "MainWindow.frx",
+      "bytes": 37400,
+      "designer_streams": 90
+    }
   ]
 }

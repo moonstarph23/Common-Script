@@ -1,6 +1,9 @@
 # Local testing workspace
 Testing/
 
+# Local agent instructions
+AGENTS.md
+
 # Python bytecode and caches
 __pycache__/
 *.py[cod]

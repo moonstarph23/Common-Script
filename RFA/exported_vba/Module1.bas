@@ -49,8 +49,3 @@ Public Sub AddToForm(ByVal Box_Type As Long)
    End If
 
 End Sub
-
-Sub tst()
-Application.Visible = True
-
-End Sub
