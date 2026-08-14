@@ -2838,31 +2838,62 @@ Private Sub frmNewGroup_Click()
 End Sub
 
 Private Sub cmSave_Click()
-Application.Visible = False
- Application.ScreenUpdating = False
-        ThisWorkbook.Sheets("sheet1").Activate
-        'Application.Visible = False
-        'Dim adDr As String
-        'adDr = workbooks("\\cdmvpspaaps01\Table Games\06 TG Pit Access\03 TG Information\07 Labour Optimization\07 Return from absence\RFA Excel\" & "RFA Report" & " " & VcmbDate.Value & " " & Range("y1") & ".xls"
-        
-        Application.DisplayAlerts = False
-      'Sheets("sheet1").SaveAs "\\cdmvpspaaps01\Table Games\06 TG Pit Access\03 TG Information\07 Labour Optimization\07 Return from absence\RFA Excel\" & "RFA Report" & " " & Range("y1") & ".xls", xlOpenXMLWorkbook    'FileFormat:=51
+    On Error GoTo ExportError
 
-Dim str As String
-str = "\\mcp.com\dept$\FP&A\RFA\"
-'Dim FN As String
-'fn =
-ThisWorkbook.Sheets("sheet1").Activate
-Sheets("sheet1").ExportAsFixedFormat Type:=xlTypePDF, Filename:=str & "RFA Report" & " " & Range("y1") & ".pdf"    ', FileFormat:=51
-MsgBox "Done copying of file.", vbOKOnly
-ThisWorkbook.Close savechanges:=True
-Application.Quit
-'ThisWorkbook.Application.Quit
-'ActiveWorkbook.Close savechanges:=False
-'Application.Quit
-        
-  
-  '======ME========
+    Dim outputFolder As String
+    Dim outputFilename As String
+    Dim outputPath As String
+    Dim reportDate As String
+    Dim firstShift As String
+    Dim currentShift As String
+    Dim hasMultipleShifts As Boolean
+    Dim i As Long
+
+    Application.Visible = False
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+
+    For i = 1 To lvListofAbsent.ListItems.Count
+        currentShift = Trim$(CStr(lvListofAbsent.ListItems(i).SubItems(2)))
+        If Len(currentShift) > 0 Then
+            If Len(firstShift) = 0 Then
+                firstShift = currentShift
+            ElseIf StrComp(firstShift, currentShift, vbTextCompare) <> 0 Then
+                hasMultipleShifts = True
+                Exit For
+            End If
+        End If
+    Next i
+
+    reportDate = Format$(ThisWorkbook.Worksheets("Sheet1").Range("X1").Value, "d-mmm-yy")
+    outputFolder = "\\mcp.com\dept$\FP&A\RFA\"
+
+    If StrComp(cmbShift.Text, "All Shift", vbTextCompare) = 0 _
+            Or hasMultipleShifts _
+            Or Len(firstShift) = 0 Then
+        outputFilename = "RFA Report " & reportDate & ".pdf"
+    Else
+        outputFilename = "RFA Report " & reportDate & " " & firstShift & ".pdf"
+    End If
+
+    outputPath = outputFolder & outputFilename
+    If Len(Dir$(outputPath)) > 0 Then Kill outputPath
+
+    ThisWorkbook.Worksheets("Sheet1").ExportAsFixedFormat _
+        Type:=xlTypePDF, _
+        Filename:=outputPath
+
+    MsgBox "Done copying of file.", vbOKOnly
+    ThisWorkbook.Close savechanges:=True
+    Application.Quit
+    Exit Sub
+
+ExportError:
+    Application.DisplayAlerts = True
+    Application.ScreenUpdating = True
+    Application.Visible = True
+    MsgBox "Unable to export RFA PDF: " & Err.Description, _
+        vbExclamation, "RFA Export"
 End Sub
 
 Private Sub CommandButton1_Click()

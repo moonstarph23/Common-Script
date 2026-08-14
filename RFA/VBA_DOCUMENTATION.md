@@ -126,7 +126,7 @@ flowchart TD
 - Applies borders, row height, and text wrapping.
 - Calls `cmSave_Click` after the sheet is ready.
 
-`cmSave_Click` exports `Sheet1` as a PDF named from `RFA Report` plus the value in `Sheet1!Y1`. The file is written to the configured RFA network output folder. The routine then saves and closes the workbook and quits Excel.
+`cmSave_Click` exports `Sheet1` to the configured RFA network output folder. An `All Shift` report, or any report containing more than one distinct nonblank shift, uses the date-only name `RFA Report d-mmm-yy.pdf`. A report containing exactly one shift appends that shift to the filename. An existing target PDF is replaced. If replacement or export fails, Excel is restored and the operator receives an error instead of the workbook closing silently.
 
 ## Timer and Shutdown Behavior
 
