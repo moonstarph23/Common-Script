@@ -261,10 +261,15 @@ Dim Rand As Long
 
    ThisWorkbook.Windows(1).Visible = True
     Set ws = Worksheets("Sheet1")
-    Set rng1 = ws.Cells(Rows.Count, "A").End(xlUp)
+    Set rng1 = ws.Cells(ws.Rows.Count, "A").End(xlUp)
+
+    With ws.Cells(6, 7)
+        .Value = "Manager/Admin" & vbLf & "Signature"
+        .WrapText = True
+    End With
     
-    Cells(2, 7).Value = Format(Date, "MM/DD/YYYY")
-    Cells(3, 7).Value = NewShiftRightNow
+    ws.Cells(2, 7).Value = Format(Date, "MM/DD/YYYY")
+    ws.Cells(3, 7).Value = NewShiftRightNow
     
     Rand = 7
     Do While ws.Cells(Rand, 1).Value <> ""
@@ -1213,6 +1218,8 @@ Private Sub cmSave_Click()
     Dim firstShift As String
     Dim currentShift As String
     Dim hasMultipleShifts As Boolean
+    Dim lastReportRow As Long
+    Dim reportSheet As Worksheet
     Dim i As Long
 
     Application.Visible = False
@@ -1231,7 +1238,8 @@ Private Sub cmSave_Click()
         End If
     Next i
 
-    reportDate = Format$(ThisWorkbook.Worksheets("Sheet1").Range("X1").Value, "d-mmm-yy")
+    Set reportSheet = ThisWorkbook.Worksheets("Sheet1")
+    reportDate = Format$(reportSheet.Range("X1").Value, "d-mmm-yy")
     outputFolder = "\\mcp.com\dept$\FP&A\RFA\"
 
     If StrComp(cmbShift.Text, "All Shift", vbTextCompare) = 0 _
@@ -1245,9 +1253,22 @@ Private Sub cmSave_Click()
     outputPath = outputFolder & outputFilename
     If Len(Dir$(outputPath)) > 0 Then Kill outputPath
 
-    ThisWorkbook.Worksheets("Sheet1").ExportAsFixedFormat _
+    lastReportRow = lvListofAbsent.ListItems.Count + 6
+    If lastReportRow < 6 Then lastReportRow = 6
+
+    With reportSheet.PageSetup
+        .PrintArea = reportSheet.Range( _
+            reportSheet.Cells(1, 1), _
+            reportSheet.Cells(lastReportRow, 7)).Address
+        .Zoom = False
+        .FitToPagesWide = 1
+        .FitToPagesTall = False
+    End With
+
+    reportSheet.ExportAsFixedFormat _
         Type:=xlTypePDF, _
-        Filename:=outputPath
+        Filename:=outputPath, _
+        IgnorePrintAreas:=False
 
     MsgBox "Done copying of file.", vbOKOnly
     ThisWorkbook.Close savechanges:=True
@@ -1470,21 +1491,26 @@ Dim startupErrorDescription As String
     Dim NewTime
     
     With Me.lvListofAvailableShift
+        .ListItems.Clear
+        .ColumnHeaders.Clear
         .ColumnHeaders.Add , , "", 50
         .HideColumnHeaders = True
         .FullRowSelect = True
+        .Checkboxes = True
         .View = lvwReport
     End With
     
     
     With Me.lvListTrainee
-        .ColumnHeaders.Add , , "", 250
-        .ColumnHeaders.Add , , "", 60
+        .ListItems.Clear
+        .ColumnHeaders.Clear
+        .ColumnHeaders.Add , , "Employee", 250
+        .ColumnHeaders.Add , , "Position", 60
         .ColumnHeaders.Add , , "", 0
         .ColumnHeaders.Add , , "", 0
         .ColumnHeaders.Add , , "", 0
         .Gridlines = True
-        .HideColumnHeaders = True
+        .HideColumnHeaders = False
         .FullRowSelect = True
         .View = lvwReport
     End With

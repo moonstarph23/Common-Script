@@ -100,6 +100,8 @@ The form uses numeric four-digit values as working shift start times. Non-numeri
 
 `lvListTrainee_Click` and `LoadData` display the selected employee's ID, name, position, and 28-day roster values. `LoadColor` highlights the date associated with the selected result.
 
+During form initialization, the visible result controls are rebuilt from a clean column state. `lvListTrainee` shows `Employee` and `Position` while retaining three zero-width metadata columns, and `lvListofAvailableShift` shows a compact, headerless checkbox list. This prevents duplicate or distorted columns after manually importing the UserForm.
+
 `txtSearch_Change` searches the current result list as the operator types. A match becomes the selected employee and refreshes the detail display. No match produces an ETS message and clears the search field.
 
 `cmdRefresh_Click` uses the same all-or-nothing loader as startup. On success it replaces both roster data sets, rebuilds the selectors, attempts to restore today's date, and restarts the inactivity timer. On failure it offers Retry or Cancel without first clearing the current form data.
@@ -136,9 +138,9 @@ flowchart TD
 - Applies borders, row height, and text wrapping.
 - Calls `cmSave_Click` after the sheet is ready.
 
-`Sheet1` is the built-in report template. Its fixed column headers are `ID#`, `NAME OF EMPLOYEE`, `ROLE`, `SHIFT`, `REMARKS`, `Staff Signature`, and the two-line `Manager/Admin` / `Signature` approval header. The macros populate and format the rows beneath those headers; no separate report-template file is loaded.
+`Sheet1` is the built-in report template. Its fixed column headers are `ID#`, `NAME OF EMPLOYEE`, `ROLE`, `SHIFT`, `REMARKS`, `Staff Signature`, and the two-line `Manager/Admin` / `Signature` approval header. `SaveToWorksheet` rewrites the approval header before every export so a manually migrated VBA project cannot retain an older `PM Signature` label from its destination workbook. The macros populate and format the rows beneath those headers; no separate report-template file is loaded.
 
-`cmSave_Click` exports `Sheet1` to the configured RFA network output folder. An `All Shift` report, or any report containing more than one distinct nonblank shift, uses the date-only name `RFA Report d-mmm-yy.pdf`. A report containing exactly one shift appends that shift to the filename. An existing target PDF is replaced. If replacement or export fails, Excel is restored and the operator receives an error instead of the workbook closing silently.
+`cmSave_Click` exports `Sheet1` to the configured RFA network output folder. Before exporting, it limits the print area to columns A:G and rows 1 through the final populated report row, fits the table to one page wide, and permits additional vertical pages only when the report data requires them. This excludes unused worksheet cells from the PDF and prevents blank trailing pages. An `All Shift` report, or any report containing more than one distinct nonblank shift, uses the date-only name `RFA Report d-mmm-yy.pdf`. A report containing exactly one shift appends that shift to the filename. An existing target PDF is replaced. If replacement or export fails, Excel is restored and the operator receives an error instead of the workbook closing silently.
 
 ## Timer and Shutdown Behavior
 
