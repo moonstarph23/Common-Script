@@ -18,6 +18,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_TemplateDerived = False
 Attribute VB_Customizable = False
+Private Const LISTVIEW_REPORT_VIEW As Long = 3
 Dim NewColumn As Long
 Dim NewCycle As String
 Dim NewShiftToday As String
@@ -76,9 +77,7 @@ Dim NewStatus As String
 End Sub
 
 Private Sub cmdClose_Click()
-    Application.DisplayAlerts = False
-    ThisWorkbook.Application.Quit
-    ThisWorkbook.Close savechanges:=False
+    Call CloseRfaWorkbook(False)
 End Sub
 Private Sub cmdPrint_Click()
 Dim a As Long
@@ -578,8 +577,8 @@ Dim msg
         End If
     Call SetTimer
     ThisWorkbook.Sheets("Sheet1").Activate
-    Application.Visible = False
-    Range("x1") = cmbDate.Value
+    ThisWorkbook.Windows(1).Visible = True
+    ThisWorkbook.Worksheets("Sheet1").Range("X1").Value = cmbDate.Value
     
 End Sub
 Private Sub FirstCycle()
@@ -1222,7 +1221,6 @@ Private Sub cmSave_Click()
     Dim reportSheet As Worksheet
     Dim i As Long
 
-    Application.Visible = False
     Application.ScreenUpdating = False
     Application.DisplayAlerts = False
 
@@ -1271,8 +1269,10 @@ Private Sub cmSave_Click()
         IgnorePrintAreas:=False
 
     MsgBox "Done copying of file.", vbOKOnly
-    ThisWorkbook.Close savechanges:=True
-    Application.Quit
+    Application.DisplayAlerts = True
+    Application.ScreenUpdating = True
+    Application.Visible = True
+    Call CloseRfaWorkbook(True)
     Exit Sub
 
 ExportError:
@@ -1286,7 +1286,7 @@ End Sub
 Private Sub CommandButton1_Click()
     Application.ScreenUpdating = True
     Application.EnableEvents = True
-    Application.Windows(1).Visible = True
+    ThisWorkbook.Windows(1).Visible = True
     Application.Visible = True
 End Sub
 Private Sub lvListTrainee_Click()
@@ -1497,34 +1497,34 @@ Dim startupErrorDescription As String
         .HideColumnHeaders = True
         .FullRowSelect = True
         .Checkboxes = True
-        .View = lvwReport
+        .View = LISTVIEW_REPORT_VIEW
     End With
     
     
     With Me.lvListTrainee
         .ListItems.Clear
         .ColumnHeaders.Clear
-        .ColumnHeaders.Add , , "Employee", 250
-        .ColumnHeaders.Add , , "Position", 60
+        .ColumnHeaders.Add , , "", 250
+        .ColumnHeaders.Add , , "", 60
         .ColumnHeaders.Add , , "", 0
         .ColumnHeaders.Add , , "", 0
         .ColumnHeaders.Add , , "", 0
         .Gridlines = True
-        .HideColumnHeaders = False
+        .HideColumnHeaders = True
         .FullRowSelect = True
-        .View = lvwReport
+        .View = LISTVIEW_REPORT_VIEW
     End With
     
     With Me.lvFirstCycle
         .Gridlines = True
         .HideColumnHeaders = False
-        .View = lvwReport
+        .View = LISTVIEW_REPORT_VIEW
     End With
     
     With Me.lvSecondCycle
         .Gridlines = True
         .HideColumnHeaders = True
-        .View = lvwReport
+        .View = LISTVIEW_REPORT_VIEW
     End With
     
     With Me.lvDate
@@ -1533,7 +1533,7 @@ Dim startupErrorDescription As String
         .ColumnHeaders.Add , , "Cycle", 150
         .Gridlines = True
         .HideColumnHeaders = True
-        .View = lvwReport
+        .View = LISTVIEW_REPORT_VIEW
     End With
     
     With Me.lvAll
@@ -1545,7 +1545,7 @@ Dim startupErrorDescription As String
         .ColumnHeaders.Add , , "Cycle", 150
         .Gridlines = True
         .HideColumnHeaders = False
-        .View = lvwReport
+        .View = LISTVIEW_REPORT_VIEW
     End With
     
     With Me.lvListofAbsent
@@ -1556,7 +1556,7 @@ Dim startupErrorDescription As String
         .ColumnHeaders.Add , , "Remarks", 100
         .Gridlines = True
         .HideColumnHeaders = True
-        .View = lvwReport
+        .View = LISTVIEW_REPORT_VIEW
     End With
     
     
@@ -2155,12 +2155,12 @@ Private Function BuildLoadError( _
 End Function
 
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
-    ThisWorkbook.Application.Quit
-    ThisWorkbook.Close savechanges = False
-    
+    If RfaWorkbookIsClosing Then Exit Sub
+
+    Cancel = True
+    Call CloseRfaWorkbook(False)
 End Sub
 
 Private Sub UserForm_Terminate()
-    ThisWorkbook.Application.Quit
-    ThisWorkbook.Close savechanges = False
+    Call StopTimer
 End Sub

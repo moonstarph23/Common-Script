@@ -12,14 +12,14 @@ The workbook is an Employee Tracking System (ETS) that produces Return From Abse
 
 The VBA application loads two employee roster cycles, lets an operator select a date, position, and shift, identifies employees relevant to that selection, builds absence-history remarks, writes the report to the workbook, and exports an RFA PDF to a network folder.
 
-The application is built primarily around the `MainWindow` UserForm. Excel is hidden during normal operation, so the form acts as the user-facing application.
+The application is built primarily around the `MainWindow` UserForm. Excel and the RFA workbook remain visible during normal operation, with the form displayed over the worksheet. Unrelated workbooks in the same Excel instance remain visible and open.
 
 ## End-to-End Process
 
 ```mermaid
 flowchart TD
     Open["Open macro-enabled workbook"] --> WOpen["Workbook_Open event"]
-    WOpen --> HideExcel["Hide Excel window and show MainWindow"]
+    WOpen --> HideExcel["Keep the RFA workbook visible and show MainWindow"]
     HideExcel --> Init["Initialize form controls and ListViews"]
     Init --> Discover["Scan 03 TG Roster cycle folders"]
     Discover --> Paths["Resolve the two highest consecutive cycles"]
@@ -41,14 +41,14 @@ flowchart TD
     Print --> History["Scan prior statuses and build absence remarks"]
     History --> Sheet["Write report rows to Sheet1"]
     Sheet --> PDF["Export Sheet1 as RFA Report PDF"]
-    PDF --> Close["Save/close workbook and quit Excel"]
+    PDF --> Close["Save and close only the RFA workbook"]
 ```
 
 ## Startup and Data Loading
 
 The workbook class module contains the startup events and is exported as `ThisWorkbook.cls` for manual copying into the destination workbook object.
 
-1. `Workbook_Open` hides Excel, disables screen updates and alerts, hides the current workbook window through `ThisWorkbook.Windows(1)`, and displays `MainWindow`. An unexpected startup error restores Excel and reports the captured cause.
+1. `Workbook_Open` explicitly makes the current workbook window visible and displays `MainWindow` over it. It also leaves the Excel application visible so unrelated open workbooks remain available. An unexpected startup error keeps the RFA workbook visible and reports the captured cause.
 2. `UserForm_Initialize` configures the visible and hidden ListView controls, disables tracking and report output, and calls `LoadStartupDataWithRetry`.
 3. `TryResolveLatestRosterPaths` scans `\\mcp.com\dept$\FP&A\RFA\03 TG Roster` for directories named `CYCLE <positive integer>`, ignores unrelated names, and selects the two highest cycle numbers.
 4. The resolver requires the selected cycle numbers to be consecutive and constructs each filename as `CYCLE <n> ROSTER SUMMARY (Dealer, Pit Supervisor and Pit Manager).xlsx` inside its matching folder. A missing newest file is an error; the loader does not silently fall back to an older cycle.
@@ -100,7 +100,7 @@ The form uses numeric four-digit values as working shift start times. Non-numeri
 
 `lvListTrainee_Click` and `LoadData` display the selected employee's ID, name, position, and 28-day roster values. `LoadColor` highlights the date associated with the selected result.
 
-During form initialization, the visible result controls are rebuilt from a clean column state. `lvListTrainee` shows `Employee` and `Position` while retaining three zero-width metadata columns, and `lvListofAvailableShift` shows a compact, headerless checkbox list. This prevents duplicate or distorted columns after manually importing the UserForm.
+During form initialization, the visible result controls are rebuilt from a clean column state. `lvListTrainee` uses two visible data columns aligned beneath the form's separate `Employee` and `Position` labels while retaining three zero-width metadata columns, and `lvListofAvailableShift` shows a compact, headerless checkbox list beneath its separate label. All ListViews use an internal numeric report-view constant rather than the optional Common Controls `lvwReport` enum, preventing imported projects from falling back to icon view and scattering entries across the control.
 
 `txtSearch_Change` searches the current result list as the operator types. A match becomes the selected employee and refreshes the detail display. No match produces an ETS message and clears the search field.
 
@@ -152,10 +152,10 @@ stateDiagram-v2
     TimerScheduled --> TimerCancelled: StopTimer
     TimerCancelled --> TimerScheduled: user/form activity completes
     TimerScheduled --> Shutdown: scheduled time reached
-    Shutdown --> [*]: close target workbook / quit Excel
+    Shutdown --> [*]: close only the RFA workbook
 ```
 
-Many form events cancel and reschedule this timer. The workbook class also resets it after worksheet calculation and selection changes. `Workbook_BeforeClose` cancels the scheduled callback.
+Many form events cancel and reschedule this timer. The workbook class also resets it after worksheet calculation and selection changes. `Workbook_BeforeClose` cancels the scheduled callback and restores shared Excel application settings. The form close button, form window close action, PDF completion, and inactivity timeout all call `CloseRfaWorkbook`; none calls `Application.Quit`.
 
 ## Component Inventory
 
@@ -168,7 +168,7 @@ Many form events cancel and reschedule this timer. The workbook class also reset
 | `Module2.bas` | Standard module | Makes the UserForm appear as a taskbar application through Windows APIs |
 | `Module3.bas` | Standard module | Schedules, cancels, and performs inactivity shutdown |
 
-The retained components contain 53 active or reachable procedures and 125 detected form controls. `Sheet1`, `Sheet2`, and `Sheet3` have no executable VBA, so their empty document modules are not exported.
+The retained components contain 54 active or reachable procedures and 125 detected form controls. `Sheet1`, `Sheet2`, and `Sheet3` have no executable VBA, so their empty document modules are not exported.
 
 ## Manual VBA Import
 
@@ -209,13 +209,12 @@ The V6.0 cleanup removed 17 unreferenced procedures and five empty event handler
 
 1. **Embedded credential:** A workbook/worksheet password is hard-coded in the original VBA. It should be removed from source code and supplied through an approved secure mechanism.
 2. **Network coupling:** Cycle discovery, roster loading, and PDF output depend on internal network paths. There is no offline fallback.
-3. **Broad Excel shutdown:** Several routines call `Application.Quit`, which can close the entire Excel instance rather than only this workbook.
-4. **Legacy error handling outside startup:** Startup and roster refresh now use contextual cleanup and Retry/Cancel recovery, but some unrelated legacy handlers still suppress errors or show only a generic message.
-5. **Unqualified Excel objects:** Several `Cells`, `Rows`, `Range`, and `Sheets` references rely on whichever workbook or worksheet is active.
-6. **64-bit API declarations:** The declarations are marked `PtrSafe`, but window handles are stored as `Long` rather than `LongPtr`; this can be unsafe in 64-bit Office.
-7. **Time-window boundaries:** Shift filters use mixed string/numeric comparisons and strict greater-than/less-than bounds, which can exclude exact boundary times.
-8. **Large monolithic form:** Most business logic is embedded in `MainWindow.frm`, making testing, reuse, and isolated maintenance difficult.
-9. **Static-analysis limitation:** Control bindings, `Application.OnTime`, workbook events, and any dynamically resolved calls are not fully represented by direct-call scanning.
+3. **Legacy error handling outside startup:** Startup and roster refresh now use contextual cleanup and Retry/Cancel recovery, but some unrelated legacy handlers still suppress errors or show only a generic message.
+4. **Unqualified Excel objects:** Several `Cells`, `Rows`, `Range`, and `Sheets` references rely on whichever workbook or worksheet is active.
+5. **64-bit API declarations:** The declarations are marked `PtrSafe`, but window handles are stored as `Long` rather than `LongPtr`; this can be unsafe in 64-bit Office.
+6. **Time-window boundaries:** Shift filters use mixed string/numeric comparisons and strict greater-than/less-than bounds, which can exclude exact boundary times.
+7. **Large monolithic form:** Most business logic is embedded in `MainWindow.frm`, making testing, reuse, and isolated maintenance difficult.
+8. **Static-analysis limitation:** Control bindings, `Application.OnTime`, workbook events, and any dynamically resolved calls are not fully represented by direct-call scanning.
 
 ## Export Process
 

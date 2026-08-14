@@ -16,10 +16,8 @@ Private Sub Workbook_Open()
 
     On Error GoTo OpenError
 
-    Application.Visible = False
-    Application.DisplayAlerts = False
-    Application.ScreenUpdating = False
-    ThisWorkbook.Windows(1).Visible = False
+    RfaWorkbookIsClosing = False
+    ThisWorkbook.Windows(1).Visible = True
 
     MainWindow.Show
     ctrString = 1
@@ -40,7 +38,13 @@ OpenError:
         vbCritical, "RFA Startup"
 End Sub
 Private Sub Workbook_BeforeClose(Cancel As Boolean)
+    RfaWorkbookIsClosing = True
     Call StopTimer
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    Application.AskToUpdateLinks = True
+    Application.Visible = True
 End Sub
 Private Sub Workbook_SheetCalculate(ByVal Sh As Object)
     Call StopTimer
