@@ -20,8 +20,8 @@ Public Sub ShutDown()
     '    .Saved = False
     '    .Close
     'End With
-    Workbooks("Employee Tracking System V1.0.xlsm").Application.Quit
-    Workbooks("Employee Tracking System V1.0.xlsm").Close savechanges = False
+    ThisWorkbook.Application.Quit
+    ThisWorkbook.Close savechanges = False
     
 End Sub
 

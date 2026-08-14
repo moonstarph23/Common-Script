@@ -1,12 +1,12 @@
 # RFA VBA Process Documentation
 
-**Source workbook:** `Testing/Jorunal Template v3.xlsm`  
+**Source workbook:** `Testing/Employee Tracking System V6.0.xlsm`  
 **Export folder:** `RFA/exported_vba`  
 **Analysis method:** Static inspection only; the macros were not run in Excel.
 
-**Repository safety:** Plaintext password values present in the source workbook were replaced with `<REDACTED>` in the exported VBA before commit. The original workbook remains unchanged in the ignored `Testing` folder.
+**Repository safety:** Plaintext password values retained inside the ignored workbook were replaced with `<REDACTED>` in the tracked VBA export before commit. VBA project protection remains enabled in the V6.0 workbook.
 
-The workbook filename says “Jorunal Template,” but the embedded VBA identifies the application as an Employee Tracking System (ETS) and produces Return From Absence (RFA) reports. This documentation describes the behavior found in the VBA, not the apparent purpose implied by the filename.
+The workbook is an Employee Tracking System (ETS) that produces Return From Absence (RFA) reports. Its executable VBA self-references use `ThisWorkbook` rather than a version-specific filename, so future file renames do not require code changes.
 
 ## Purpose
 
@@ -48,7 +48,7 @@ flowchart TD
 
 The workbook class module contains the startup events. It is not present as a standalone `.cls` file because the export follows the repository's trimmed Budget format, which retains standard modules and UserForm code only.
 
-1. `Workbook_Open` hides Excel, disables screen updates and alerts, hides a specifically named Employee Tracking System workbook window, and displays `MainWindow`.
+1. `Workbook_Open` hides Excel, disables screen updates and alerts, hides the current workbook window through `ThisWorkbook.Windows(1)`, and displays `MainWindow`.
 2. `UserForm_Initialize` configures the visible and hidden ListView controls, disables report output until data is selected, and starts data loading.
 3. `CallDatabaseLoc` opens a network-hosted `Database.xlsx` file and reads two workbook locations from the first row of `Sheet1`.
 4. `LoadDataFromExcel` populates the shift and position selectors and chooses a default shift based on the current time.
@@ -185,17 +185,15 @@ Several empty, commented-out, or test-oriented handlers remain in the project, i
 
 ## Risks and Maintenance Notes
 
-1. **Workbook-name mismatch:** The attached filename differs from the Employee Tracking System names hard-coded throughout the VBA. Renaming or replacing the workbook can cause `Windows(...)` and `Workbooks(...)` lookups to fail.
-2. **Version mismatch:** Most form code targets an Employee Tracking System V5.0 filename, while the shutdown module targets V1.0. The scheduled shutdown may therefore act on the wrong workbook or raise an error.
-3. **Embedded credential:** A workbook/worksheet password is hard-coded in the VBA. It should be removed from source code and supplied through an approved secure mechanism.
-4. **Network coupling:** Configuration, roster loading, and PDF output depend on internal network paths. There is no offline fallback.
-5. **Broad Excel shutdown:** Several routines call `Application.Quit`, which can close the entire Excel instance rather than only this workbook.
-6. **Error handling:** Some handlers suppress errors or only show a generic message. Partial loads can leave Excel hidden or application flags in an unexpected state.
-7. **Unqualified Excel objects:** Several `Cells`, `Rows`, `Range`, `Sheets`, and `Windows` references rely on whichever workbook or worksheet is active.
-8. **64-bit API declarations:** The declarations are marked `PtrSafe`, but window handles are stored as `Long` rather than `LongPtr`; this can be unsafe in 64-bit Office.
-9. **Time-window boundaries:** Shift filters use mixed string/numeric comparisons and strict greater-than/less-than bounds, which can exclude exact boundary times.
-10. **Large monolithic form:** Most business logic is embedded in `MainWindow.frm`, making testing, reuse, and isolated maintenance difficult.
-11. **Static-analysis limitation:** Control bindings, `Application.OnTime`, workbook events, and any dynamically resolved calls are not fully represented by direct-call scanning.
+1. **Embedded credential:** A workbook/worksheet password is hard-coded in the original VBA. It should be removed from source code and supplied through an approved secure mechanism.
+2. **Network coupling:** Configuration, roster loading, and PDF output depend on internal network paths. There is no offline fallback.
+3. **Broad Excel shutdown:** Several routines call `Application.Quit`, which can close the entire Excel instance rather than only this workbook.
+4. **Error handling:** Some handlers suppress errors or only show a generic message. Partial loads can leave Excel hidden or application flags in an unexpected state.
+5. **Unqualified Excel objects:** Several `Cells`, `Rows`, `Range`, and `Sheets` references rely on whichever workbook or worksheet is active.
+6. **64-bit API declarations:** The declarations are marked `PtrSafe`, but window handles are stored as `Long` rather than `LongPtr`; this can be unsafe in 64-bit Office.
+7. **Time-window boundaries:** Shift filters use mixed string/numeric comparisons and strict greater-than/less-than bounds, which can exclude exact boundary times.
+8. **Large monolithic form:** Most business logic is embedded in `MainWindow.frm`, making testing, reuse, and isolated maintenance difficult.
+9. **Static-analysis limitation:** Control bindings, `Application.OnTime`, workbook events, and any dynamically resolved calls are not fully represented by direct-call scanning.
 
 ## Export Process
 

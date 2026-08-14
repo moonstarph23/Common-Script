@@ -115,10 +115,10 @@ Private Sub cmdClose_Click()
     'cmbDate.Clear
     'cmbShift.Clear
     'frmTrack.Visible = False
-    'Workbooks("Employee Tracking System.xlsm").Saved = False
+    'ThisWorkbook.Saved = False
     Application.DisplayAlerts = False
-    Workbooks("Employee Tracking System V5.0.xlsm").Application.Quit
-    Workbooks("Employee Tracking System V5.0.xlsm").Close savechanges:=False
+    ThisWorkbook.Application.Quit
+    ThisWorkbook.Close savechanges:=False
     'End
 End Sub
 
@@ -327,7 +327,7 @@ Dim NewID As String
 Dim NewName As String
 Dim Rand As Long
 
-   Windows("Employee Tracking System V5.0.xlsm").Visible = True
+   ThisWorkbook.Windows(1).Visible = True
     Set ws = Worksheets("Sheet1")
     Set rng1 = ws.Cells(Rows.Count, "A").End(xlUp)
     
@@ -460,7 +460,7 @@ Dim Rand As Long
     
     Next i
     
-   'Workbooks("Employee Tracking System V5.0.xlsm").Application.Visible = True
+   'ThisWorkbook.Application.Visible = True
     
     
     'Sheets("Sheet1").Visible = false
@@ -475,14 +475,14 @@ Dim Rand As Long
     
     
     
-    'Windows("Employee Tracking System V5.0.xlsm").Visible = False
-   ' Workbooks("Employee Tracking System V5.0.xlsm").Application.Visible = False
+    'ThisWorkbook.Windows(1).Visible = False
+   ' ThisWorkbook.Application.Visible = False
     
     
     
     
     'Application.Visible = False
-    'Windows("Employee Tracking System.xlsm").Visible = False
+    'ThisWorkbook.Windows(1).Visible = False
     
     'Application.Windows(1).Visible = False
         'With Rng.Borders
@@ -2857,7 +2857,7 @@ Sheets("sheet1").ExportAsFixedFormat Type:=xlTypePDF, Filename:=str & "RFA Repor
 MsgBox "Done copying of file.", vbOKOnly
 ThisWorkbook.Close savechanges:=True
 Application.Quit
-'Workbooks("Employee Tracking System V5.0.xlsm").Application.Quit
+'ThisWorkbook.Application.Quit
 'ActiveWorkbook.Close savechanges:=False
 'Application.Quit
         
@@ -2878,15 +2878,15 @@ End Sub
 
 Private Sub CommandButton2_Click()
 'Dim msg
-'    Windows("Employee Tracking System.xlsm").Visible = True
+'    ThisWorkbook.Windows(1).Visible = True
     'Application.Visible = True
 'msg = MsgBox("The name of the active window is " & ActiveWindow.Caption)
 
-'Workbooks("Employee Tracking System.xlsm").Windows(1).Visible = False
+'ThisWorkbook.Windows(1).Visible = False
 End Sub
 
 Private Sub CommandButton3_Click()
-    Workbooks("Employee Tracking System V5.0.xlsm").Application.Visible = True
+    ThisWorkbook.Application.Visible = True
 End Sub
 
 
@@ -3178,10 +3178,10 @@ End Sub
 Private Sub UserForm_Activate()
     AddToForm MIN_BOX
     'Application.Visible = False
-    'Workbooks("Employee Tracking System.xlsm").Windows(1).Visible = False
+    'ThisWorkbook.Windows(1).Visible = False
     
-    'Workbooks("Employee Tracking System V1.0.xlsm").Application.Visible = False
-    'Workbooks("Employee Tracking System V1.0.xlsm").Application.VBE.MainWindow.Visible = False
+    'ThisWorkbook.Application.Visible = False
+    'ThisWorkbook.Application.VBE.MainWindow.Visible = False
     AppTasklist Me
 End Sub
 
@@ -3503,17 +3503,17 @@ End Sub
 
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
     'Application.Visible = True
-    'Workbooks("Employee Tracking System.xlsm").Close savechanges:=False
+    'ThisWorkbook.Close savechanges:=False
     'ThisWorkbook.Close savechanges:=False
     '.DisplayAlerts = False
-    Workbooks("Employee Tracking System V5.0.xlsm").Application.Quit
-    Workbooks("Employee Tracking System V5.0.xlsm").Close savechanges = False
+    ThisWorkbook.Application.Quit
+    ThisWorkbook.Close savechanges = False
     
 End Sub
 
 Private Sub UserForm_Terminate()
     'ActiveWorkbook.Close
-    Workbooks("Employee Tracking System V5.0.xlsm").Application.Quit
-    Workbooks("Employee Tracking System V5.0.xlsm").Close savechanges = False
+    ThisWorkbook.Application.Quit
+    ThisWorkbook.Close savechanges = False
     'Application.Visible = True
 End Sub
