@@ -1847,14 +1847,16 @@ Private Function TryLoadRoster( _
         GoTo CleanUp
     End If
 
-    rosterData = rosterRange.Value2
-    If Not IsDate(rosterData(2, 3)) Then
+    If Not TryReadRosterStartDate( _
+            rosterSheet.Range("C2"), startDate) Then
         errorMessage = BuildLoadError( _
             rosterRole & " has an invalid start date", rosterPath, 0, "", _
-            "Current Roster cell C2 must contain a valid cycle start date.")
+            "Current Roster cell C2 must contain a valid date value or " & _
+            "a formula that returns a valid date.")
         GoTo CleanUp
     End If
 
+    rosterData = rosterRange.Value2
     For rowIndex = 3 To UBound(rosterData, 1)
         If Len(SafeCellText(rosterData(rowIndex, 1))) > 0 _
                 And SafeCellText(rosterData(rowIndex, 1)) <> "-" Then
@@ -1870,7 +1872,6 @@ Private Function TryLoadRoster( _
         GoTo CleanUp
     End If
 
-    startDate = CDate(rosterData(2, 3))
     loadSucceeded = True
     GoTo CleanUp
 
@@ -1890,6 +1891,36 @@ CleanUp:
     Set sourceWorkbook = Nothing
     On Error GoTo 0
     TryLoadRoster = loadSucceeded
+End Function
+
+Private Function TryReadRosterStartDate( _
+        ByVal dateCell As Range, _
+        ByRef startDate As Date) As Boolean
+
+    Dim rawValue As Variant
+
+    On Error GoTo InvalidDate
+    If dateCell Is Nothing Then Exit Function
+
+    rawValue = dateCell.Value
+    If IsError(rawValue) Then Exit Function
+    If IsNull(rawValue) Or IsEmpty(rawValue) Then Exit Function
+
+    If IsDate(rawValue) Then
+        startDate = DateValue(CDate(rawValue))
+        TryReadRosterStartDate = True
+        Exit Function
+    End If
+
+    rawValue = dateCell.Value2
+    If Not IsNumeric(rawValue) Then Exit Function
+
+    startDate = DateValue(CDate(CDbl(rawValue)))
+    TryReadRosterStartDate = True
+    Exit Function
+
+InvalidDate:
+    startDate = 0
 End Function
 
 Private Sub PopulateRosterControls( _

@@ -52,7 +52,7 @@ The workbook class module contains the startup events and is exported as `ThisWo
 2. `UserForm_Initialize` configures the visible and hidden ListView controls, disables tracking and report output, and calls `LoadStartupDataWithRetry`.
 3. `TryResolveLatestRosterPaths` scans `\\mcp.com\dept$\FP&A\RFA\03 TG Roster` for directories named `CYCLE <positive integer>`, ignores unrelated names, and selects the two highest cycle numbers.
 4. The resolver requires the selected cycle numbers to be consecutive and constructs each filename as `CYCLE <n> ROSTER SUMMARY (Dealer, Pit Supervisor and Pit Manager).xlsx` inside its matching folder. A missing newest file is an error; the loader does not silently fall back to an older cycle.
-5. `TryLoadRoster` opens the older cycle as First Cycle and the newest as Second Cycle, both read-only. Each workbook must contain a `Current Roster` worksheet, a region of at least 3 rows by 16 columns, a valid cycle start date in C2, and at least one employee beginning on row 3. The newer C2 date must be exactly 14 days after the older date.
+5. `TryLoadRoster` opens the older cycle as First Cycle and the newest as Second Cycle, both read-only. Each workbook must contain a `Current Roster` worksheet, a region of at least 3 rows by 16 columns, a valid cycle start date in C2, and at least one employee beginning on row 3. `TryReadRosterStartDate` reads C2 directly with Excel's date-aware `.Value` property and also accepts numeric Excel date serials, so formula-generated dates such as `='Dump Current'!D8` are valid. The newer C2 date must be exactly 14 days after the older date.
 6. Both roster ranges are read into arrays before any visible or hidden form data is cleared. Only after both sources pass does `PopulateRosterControls` replace the form data and build the 28-day, two-cycle date map.
 7. The loader restores Excel application flags and enables tracking and the inactivity timer only after a complete successful load.
 
@@ -166,7 +166,7 @@ Many form events cancel and reschedule this timer. The workbook class also reset
 | `Module2.bas` | Standard module | Makes the UserForm appear as a taskbar application through Windows APIs |
 | `Module3.bas` | Standard module | Schedules, cancels, and performs inactivity shutdown |
 
-The retained components contain 52 active or reachable procedures and 125 detected form controls. `Sheet1`, `Sheet2`, and `Sheet3` have no executable VBA, so their empty document modules are not exported.
+The retained components contain 53 active or reachable procedures and 125 detected form controls. `Sheet1`, `Sheet2`, and `Sheet3` have no executable VBA, so their empty document modules are not exported.
 
 ## Manual VBA Import
 
@@ -182,7 +182,7 @@ The exported form source contains `<REDACTED>` in place of the locally embedded 
 |---|---|
 | Form lifecycle | `UserForm_Initialize`, `UserForm_Activate`, `UserForm_QueryClose`, `UserForm_Terminate` |
 | Workbook events | `Workbook_Open`, `Workbook_BeforeClose`, `Workbook_SheetCalculate`, `Workbook_SheetSelectionChange` |
-| Cycle discovery and import | `LoadStartupDataWithRetry`, `TryLoadStartupData`, `TryResolveLatestRosterPaths`, `TryParseCycleFolderName`, `FolderIsAccessible`, `TryLoadRoster`, `PopulateRosterControls`, `InitializeFilterChoices`, `SelectDefaultDate` |
+| Cycle discovery and import | `LoadStartupDataWithRetry`, `TryLoadStartupData`, `TryResolveLatestRosterPaths`, `TryParseCycleFolderName`, `FolderIsAccessible`, `TryLoadRoster`, `TryReadRosterStartDate`, `PopulateRosterControls`, `InitializeFilterChoices`, `SelectDefaultDate` |
 | Selector reactions | `cmbDate_Change`, `cmbPosition_Change`, `cmbShift_Change`, `CallShiftStarts` |
 | Main tracking | `cmdTrackNow_Click`, `FirstCycle`, `SecondCycle`, `LookForRecordFirst`, `LookForRecordSecond` |
 | Available shifts | `LookForRecordFirstForShifting`, `LookForRecordSecondForShifting` |
