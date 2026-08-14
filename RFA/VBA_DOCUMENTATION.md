@@ -21,10 +21,10 @@ flowchart TD
     Open["Open macro-enabled workbook"] --> WOpen["Workbook_Open event"]
     WOpen --> HideExcel["Hide Excel window and show MainWindow"]
     HideExcel --> Init["Initialize form controls and ListViews"]
-    Init --> Config["Open RFA Database.xlsx configuration"]
-    Config --> Paths["Read two roster workbook paths"]
-    Paths --> Load1["Load First Cycle Current Roster"]
-    Paths --> Load2["Load Second Cycle Current Roster"]
+    Init --> Config["Validate RFA Database.xlsx configuration"]
+    Config --> Paths["Validate both configured roster paths"]
+    Paths --> Load1["Validate First Cycle Current Roster"]
+    Paths --> Load2["Validate Second Cycle Current Roster"]
     Load1 --> Dates["Build 28-day date-to-cycle map"]
     Load2 --> Dates
     Dates --> Select["Operator selects date, position, and shift"]
@@ -48,11 +48,12 @@ flowchart TD
 
 The workbook class module contains the startup events. It is not present as a standalone `.cls` file because the export follows the repository's trimmed Budget format, which retains standard modules and UserForm code only.
 
-1. `Workbook_Open` hides Excel, disables screen updates and alerts, hides the current workbook window through `ThisWorkbook.Windows(1)`, and displays `MainWindow`.
-2. `UserForm_Initialize` configures the visible and hidden ListView controls, disables report output until data is selected, and starts data loading.
-3. `CallDatabaseLoc` opens a network-hosted `Database.xlsx` file and reads two workbook locations from the first row of `Sheet1`.
-4. `LoadDataFromExcel` populates the shift and position selectors and chooses a default shift based on the current time.
-5. `ReadDataFromCloseFile` opens both configured roster workbooks as read-only, reads each `Current Roster` region into a hidden ListView, then creates a 28-day date list divided into two 14-day cycles.
+1. `Workbook_Open` hides Excel, disables screen updates and alerts, hides the current workbook window through `ThisWorkbook.Windows(1)`, and displays `MainWindow`. An unexpected startup error restores Excel and reports the captured cause.
+2. `UserForm_Initialize` configures the visible and hidden ListView controls, disables tracking and report output, and calls `LoadStartupDataWithRetry`.
+3. `TryLoadConfiguration` verifies that the network-hosted `Database.xlsx` file exists, contains `Sheet1`, and provides nonblank, accessible first- and second-cycle roster paths in cells A1 and B1.
+4. `TryLoadRoster` opens each roster read-only and verifies that it contains a `Current Roster` worksheet, a region of at least 3 rows by 16 columns, a valid cycle start date in C2, and at least one employee beginning on row 3.
+5. Both roster ranges are read into arrays before any visible or hidden form data is cleared. Only after both sources pass does `PopulateRosterControls` replace the form data and build the 28-day, two-cycle date map.
+6. The loader restores Excel application flags and enables tracking and the inactivity timer only after a complete successful load.
 
 ```mermaid
 flowchart LR
@@ -60,10 +61,16 @@ flowchart LR
     Config --> P2["Cell B1: second-cycle roster path"]
     P1 --> R1["First-cycle Current Roster"]
     P2 --> R2["Second-cycle Current Roster"]
-    R1 --> Memory["Hidden form ListViews"]
-    R2 --> Memory
+    R1 --> Validate{"Both rosters valid?"}
+    R2 --> Validate
+    Validate -->|Yes| Memory["Commit arrays to hidden form ListViews"]
+    Validate -->|No| Choice{"Retry or Cancel?"}
+    Choice -->|Retry| Config
+    Choice -->|Cancel| Disabled["Reveal Excel; leave tracking disabled; keep Refresh available"]
     Memory --> Map["28-day date and cycle map"]
 ```
+
+Validation is all-or-nothing: a missing or invalid source never clears previously loaded form data. Error dialogs identify the configuration or roster role, show the full failing path, describe the Excel error when one is available, and state the corrective action. Retry runs the same validation again. Cancel closes any partially opened source workbook, restores Excel visibility and application state, stops the timer, disables tracking, and leaves Refresh enabled so the operator can retry later.
 
 ## Selection and Tracking
 
@@ -92,7 +99,7 @@ The form uses numeric four-digit values as working shift start times. Non-numeri
 
 `txtSearch_Change` searches the current result list as the operator types. A match becomes the selected employee and refreshes the detail display. No match produces an ETS message and clears the search field.
 
-`cmdRefresh_Click` reloads both roster sources, rebuilds the selectors, attempts to restore today's date, and resets the inactivity timer.
+`cmdRefresh_Click` uses the same all-or-nothing loader as startup. On success it replaces both roster data sets, rebuilds the selectors, attempts to restore today's date, and restarts the inactivity timer. On failure it offers Retry or Cancel without first clearing the current form data.
 
 ## RFA Report Generation
 
@@ -126,6 +133,8 @@ flowchart TD
 - Applies borders, row height, and text wrapping.
 - Calls `cmSave_Click` after the sheet is ready.
 
+`Sheet1` is the built-in report template. Its fixed column headers are `ID#`, `NAME OF EMPLOYEE`, `ROLE`, `SHIFT`, `REMARKS`, `Staff Signature`, and the two-line `Manager/Admin` / `Signature` approval header. The macros populate and format the rows beneath those headers; no separate report-template file is loaded.
+
 `cmSave_Click` exports `Sheet1` to the configured RFA network output folder. An `All Shift` report, or any report containing more than one distinct nonblank shift, uses the date-only name `RFA Report d-mmm-yy.pdf`. A report containing exactly one shift appends that shift to the filename. An existing target PDF is replaced. If replacement or export fails, Excel is restored and the operator receives an error instead of the workbook closing silently.
 
 ## Timer and Shutdown Behavior
@@ -155,14 +164,14 @@ Many form events cancel and reschedule this timer. The workbook class also reset
 | `manifest.json` | Export metadata | Component sizes, procedure count, form-control inventory, and direct calls |
 | `references.txt` | Reference placeholder | Matches the trimmed Budget export layout |
 
-The retained components contain 56 procedures and 125 detected form controls.
+The retained components contain 68 procedures and 125 detected form controls.
 
 ## Important Procedure Groups
 
 | Area | Procedures |
 |---|---|
 | Form lifecycle | `UserForm_Initialize`, `UserForm_Activate`, `UserForm_QueryClose`, `UserForm_Terminate` |
-| Configuration and import | `CallDatabaseLoc`, `LoadDataFromExcel`, `ReadDataFromCloseFile` |
+| Configuration and import | `LoadStartupDataWithRetry`, `TryLoadStartupData`, `TryLoadConfiguration`, `TryLoadRoster`, `PopulateRosterControls`, `InitializeFilterChoices`, `SelectDefaultDate` |
 | Selector reactions | `cmbDate_Change`, `cmbPosition_Change`, `cmbShift_Change`, `CallShiftStarts` |
 | Main tracking | `cmdTrackNow_Click`, `FirstCycle`, `SecondCycle`, `LookForRecordFirst`, `LookForRecordSecond` |
 | Available shifts | `LookForRecordFirstForShifting`, `LookForRecordSecondForShifting` |
@@ -188,7 +197,7 @@ Several empty, commented-out, or test-oriented handlers remain in the project, i
 1. **Embedded credential:** A workbook/worksheet password is hard-coded in the original VBA. It should be removed from source code and supplied through an approved secure mechanism.
 2. **Network coupling:** Configuration, roster loading, and PDF output depend on internal network paths. There is no offline fallback.
 3. **Broad Excel shutdown:** Several routines call `Application.Quit`, which can close the entire Excel instance rather than only this workbook.
-4. **Error handling:** Some handlers suppress errors or only show a generic message. Partial loads can leave Excel hidden or application flags in an unexpected state.
+4. **Legacy error handling outside startup:** Startup and roster refresh now use contextual cleanup and Retry/Cancel recovery, but some unrelated legacy handlers still suppress errors or show only a generic message.
 5. **Unqualified Excel objects:** Several `Cells`, `Rows`, `Range`, and `Sheets` references rely on whichever workbook or worksheet is active.
 6. **64-bit API declarations:** The declarations are marked `PtrSafe`, but window handles are stored as `Long` rather than `LongPtr`; this can be unsafe in 64-bit Office.
 7. **Time-window boundaries:** Shift filters use mixed string/numeric comparisons and strict greater-than/less-than bounds, which can exclude exact boundary times.

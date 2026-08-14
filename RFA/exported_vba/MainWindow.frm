@@ -15,6 +15,8 @@ Dim NewShiftToday As String
 
 Dim NewShiftRightNow As String
 Dim VarListItem As Long
+Dim mIsLoadingData As Boolean
+Dim mHasValidRosterData As Boolean
 'Dim NewDateRightNow As String
 
 Private Sub cmdInsert_Click()
@@ -64,18 +66,21 @@ Private Sub cmdRemove_Click()
 End Sub
 
 Private Sub cmbDate_Change()
+    If mIsLoadingData Then Exit Sub
     Call StopTimer
     Call SetTimer
     Call CallShiftStarts
 End Sub
 
 Private Sub cmbPosition_Change()
+    If mIsLoadingData Then Exit Sub
     Call StopTimer
     Call SetTimer
     Call CallShiftStarts
 End Sub
 
 Private Sub cmbShift_Change()
+    If mIsLoadingData Then Exit Sub
     Call StopTimer
     Call SetTimer
     Call CallShiftStarts
@@ -499,48 +504,9 @@ End Sub
 
 Private Sub cmdTrackEmpSL_Click()
 End Sub
-
 Private Sub LoadDataFromExcel()
-    cmbShift.Clear
-    cmbShift.AddItem "All Shift"
-    cmbShift.AddItem "Morning Shift"
-    cmbShift.AddItem "Day Shift"
-    cmbShift.AddItem "Late Day Shift"
-    cmbShift.AddItem "Night Shift"
-    cmbShift.AddItem "Late Night Shift"
-    
-    cmbPosition.Clear
-    cmbPosition.AddItem "All"
-    cmbPosition.AddItem "Dealer"
-    cmbPosition.AddItem "Pit Supervisor"
-    cmbPosition.AddItem "Pit Manager"
-    cmbPosition.Text = "All"
-    
-    NewTime = Format(Time(), "HHMM")
-    If NewTime > "0500" And NewTime < "1200" Then
-        cmbShift.Text = "Morning Shift"
-    ElseIf NewTime > "1159" And NewTime < "1800" Then
-        cmbShift.Text = "Day Shift"
-    ElseIf NewTime > "1759" And NewTime < "1930" Then
-        cmbShift.Text = "Late Day Shift"
-    ElseIf NewTime > "1929" And NewTime < "2359" Then
-        cmbShift.Text = "Night Shift"
-    ElseIf NewTime > "0111" And NewTime < "0500" Then
-        cmbShift.Text = "Late Night Shift"
-    End If
-    
-    Call ReadDataFromCloseFile
-    
-    'cmbDate.Text = Format(Date, "MM/DD/YYYY")
-
-    frmTrack.Visible = True
-    'cmdTrackEmpSL.Enabled = False
-    txtSearch.Text = ""
-    txtSearch.Enabled = False
-    Call ClearAll
-
+    Call LoadStartupDataWithRetry
 End Sub
-
 Private Sub ClearAll()
     lblid.Caption = ""
     lblname.Caption = ""
@@ -641,46 +607,18 @@ Private Sub DefaultBackground()
     frmDate27.BackColor = &H80000004
     frmDate28.BackColor = &H80000004
 End Sub
-
 Private Sub cmdRefresh_Click()
-Dim NewDate As String
-
-    On Error GoTo ErrHandler
-    Call StopTimer
-    lvListTrainee.ListItems.Clear
-    cmbDate.Clear
-    'cmbPosition.Text = "All"
-    Call ClearAll
-    Call LoadDataFromExcel
-    
-    
-    NewDate = Format(Date, "MM/DD/YYYY")
-    For i = 0 To cmbDate.ListCount - 1
-        If NewDate = cmbDate.List(i) Then
-            cmbDate.Text = NewDate
-            i = cmbDate.ListCount
-            bFound = True
-        Else
-            bFound = False
-        End If
-    Next i
-    
-    If bFound = False Then
-        msg = MsgBox("Today's Date (" & NewDate & ") is not available in the List!", vbExclamation, "ETS Confirmation!")
-        cmbDate.Text = cmbDate.List(cmbDate.ListCount - 1)
-        cmbDate.SetFocus
-    End If
-    
-    Call SetTimer
-Exit Sub
-ErrHandler:
-    msg = MsgBox(Err.Description, vbExclamation, "ETS Confirmation!")
-    
+    Call LoadStartupDataWithRetry
 End Sub
-
 Private Sub cmdTrackNow_Click()
 Dim i As Long
 Dim msg
+
+    If Not mHasValidRosterData Then
+        MsgBox "Roster data has not been validated. Select Refresh to retry.", _
+            vbExclamation, "RFA Data Loading"
+        Exit Sub
+    End If
 'TRACK DATE
     
     Call StopTimer
@@ -2472,11 +2410,11 @@ Dim ctr As Long
     'THIS IS FOR SORTING THE DATE
 
     
-        '.ColumnHeaders.Add , , “Date”, 100
-        '.ColumnHeaders.Add , , “Name”, 100
-        '.ColumnHeaders.Add , , “Name”, 100
-        '.ColumnHeaders.Add , , “Shift”, 100
-        '.ColumnHeaders.Add , , “Cycle”, 150
+        '.ColumnHeaders.Add , , "Date", 100
+        '.ColumnHeaders.Add , , "Name", 100
+        '.ColumnHeaders.Add , , "Name", 100
+        '.ColumnHeaders.Add , , "Shift", 100
+        '.ColumnHeaders.Add , , "Cycle", 150
 
     'For i = 1 To lvFirstCycle.ListItems.cout
         
@@ -3220,6 +3158,7 @@ Private Sub UserForm_Initialize()
 
 Dim NewDate As String
 Dim bFound As Boolean
+Dim startupErrorDescription As String
 
     'optSL.Value = True
     On Error GoTo ErrHandler
@@ -3234,7 +3173,7 @@ Dim bFound As Boolean
     Dim NewTime
     
     With Me.lvListofAvailableShift
-        .ColumnHeaders.Add , , “”, 50
+        .ColumnHeaders.Add , , "", 50
         .HideColumnHeaders = True
         .FullRowSelect = True
         .View = lvwReport
@@ -3242,11 +3181,11 @@ Dim bFound As Boolean
     
     
     With Me.lvListTrainee
-        .ColumnHeaders.Add , , “”, 250
-        .ColumnHeaders.Add , , “”, 60
-        .ColumnHeaders.Add , , “”, 0
-        .ColumnHeaders.Add , , “”, 0
-        .ColumnHeaders.Add , , “”, 0
+        .ColumnHeaders.Add , , "", 250
+        .ColumnHeaders.Add , , "", 60
+        .ColumnHeaders.Add , , "", 0
+        .ColumnHeaders.Add , , "", 0
+        .ColumnHeaders.Add , , "", 0
         .Gridlines = True
         .HideColumnHeaders = True
         .FullRowSelect = True
@@ -3266,32 +3205,32 @@ Dim bFound As Boolean
     End With
     
     With Me.lvDate
-        .ColumnHeaders.Add , , “Date”, 100
-        .ColumnHeaders.Add , , “Column”, 100
-        .ColumnHeaders.Add , , “Cycle”, 150
+        .ColumnHeaders.Add , , "Date", 100
+        .ColumnHeaders.Add , , "Column", 100
+        .ColumnHeaders.Add , , "Cycle", 150
         .Gridlines = True
         .HideColumnHeaders = True
         .View = lvwReport
     End With
     
     With Me.lvAll
-        .ColumnHeaders.Add , , “Date”, 100
-        .ColumnHeaders.Add , , “Name”, 100
-        .ColumnHeaders.Add , , “Name”, 100
-        .ColumnHeaders.Add , , “Shift”, 100
-        .ColumnHeaders.Add , , “Cycle”, 150
-        .ColumnHeaders.Add , , “Cycle”, 150
+        .ColumnHeaders.Add , , "Date", 100
+        .ColumnHeaders.Add , , "Name", 100
+        .ColumnHeaders.Add , , "Name", 100
+        .ColumnHeaders.Add , , "Shift", 100
+        .ColumnHeaders.Add , , "Cycle", 150
+        .ColumnHeaders.Add , , "Cycle", 150
         .Gridlines = True
         .HideColumnHeaders = False
         .View = lvwReport
     End With
     
     With Me.lvListofAbsent
-        .ColumnHeaders.Add , , “ID, 100
-        .ColumnHeaders.Add , , “Name”, 100
-        .ColumnHeaders.Add , , “Position”, 100
-        .ColumnHeaders.Add , , “Shift”, 300
-        .ColumnHeaders.Add , , “Remarks”, 100
+        .ColumnHeaders.Add , , "ID", 100
+        .ColumnHeaders.Add , , "Name", 100
+        .ColumnHeaders.Add , , "Position", 100
+        .ColumnHeaders.Add , , "Shift", 300
+        .ColumnHeaders.Add , , "Remarks", 100
         .Gridlines = True
         .HideColumnHeaders = True
         .View = lvwReport
@@ -3301,236 +3240,521 @@ Dim bFound As Boolean
     'txtDate.Text = Format(Date, "MM/DD/YYYY")
     lvListTrainee.ListItems.Clear
     'frmTrack.Visible = False
-    
-    Call CallDatabaseLoc
-    
-    Call LoadDataFromExcel
-    NewDate = VBA.Format(Date, "MM/DD/YYYY")
-    
-    For i = 0 To cmbDate.ListCount - 1
-        If NewDate = cmbDate.List(i) Then
-            cmbDate.Text = NewDate
-            i = cmbDate.ListCount
-            bFound = True
-        Else
-            bFound = False
-        End If
-    Next i
-    
-    If bFound = False Then
-        msg = MsgBox("Today's Date (" & NewDate & ") is not available in the List!", vbExclamation, "ETS Confirmation!")
-        cmbDate.Text = cmbDate.List(cmbDate.ListCount - 1)
-        cmbDate.SetFocus
-    Else
-        cmbDate.Text = Format(Date, "MM/DD/YYYY")
+    If Not LoadStartupDataWithRetry() Then
+        SetTrackingEnabled False
     End If
-Exit Sub
+    Exit Sub
+
 ErrHandler:
-    msg = MsgBox(Err.Description, vbExclamation, "ETS Confirmation!")
-    'cmbPosition.Text = cmbPosition.ListIndex(cmbPosition.ListCount)
-End Sub
-
-Private Sub CallDatabaseLoc()
-    'On Error GoTo ErrHandler
-    Application.ScreenUpdating = False
-    
-    Dim src As Workbook
-    Dim rngData As Range
-    Dim rngCell As Range
-    Dim i As Long
-    Dim j As Long
-    Dim k As Long
-    Dim x As Integer
-    Dim iTotalRows As Integer
-    Dim iCnt As Integer         ' COUNTER.
-    Dim NewDateAgain As Date
-    Application.DisplayAlerts = False
-    
-    Set src = Workbooks.Open("\\mcp.com\dept$\FP&A\RFA\Database.xlsx", True, True)
-    'Set src = Workbooks.Open("G:\05 TG Training\02 Training\_TRAINERS FOLDER\ARTHUR\TRACKER\UPDATE ETS\Database.xlsx", True, True)
-    ActiveSheet.Unprotect Password:="<REDACTED>"
-    Application.AskToUpdateLinks = True
-    Application.DisplayAlerts = True
-    
-    ' GET THE TOTAL ROWS FROM THE SOURCE WORKBOOK.
-    'iTotalRows = src.Worksheets("Current Roster").Range("A1:A" & Cells(Rows.Count, "A").End(xlUp).Row).Rows.Count
-    Set rngData = src.Worksheets("Sheet1").Range("A1").CurrentRegion
-
-    'iTotalRows = src.Worksheets("Sheet1").Range("A1:A" & Cells(Rows.Count, "A").End(xlUp).Row).Rows.Count
-    'Set rngData = src.Worksheets("Sheet1").Range("A1").CurrentRegion
-
-    'For Each rngCell In rngData.Rows(1).Cells
-    '    Me.lvFirstCycle.ColumnHeaders.Add Text:=rngCell.Value, Width:=90
-    'Next rngCell
-
-    'RowCount = rngData.Rows.Count
-    'ColCount = rngData.Columns.Count
-
-    ' COPY DATA FROM SOURCE (CLOSE WORKGROUP) TO THE DESTINATION WORKBOOK.
-    NewDatabaseLoc1 = rngData(1, 1).Value
-    NewDatabaseLoc2 = rngData(1, 2).Value
-    
-    'msg = MsgBox(NewDatabaseLoc1 & "    " & NewDatabaseLoc2)
-    
-    ' CLOSE THE SOURCE FILE.
-    src.Close False             ' FALSE - DON'T SAVE THE SOURCE FILE.
-    Set src = Nothing
-    
-    
-ErrHandler:
+    startupErrorDescription = Err.Description
+    SetTrackingEnabled False
     Application.EnableEvents = True
     Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    Application.AskToUpdateLinks = True
+    Application.Visible = True
+    On Error Resume Next
+    ThisWorkbook.Windows(1).Visible = True
+    On Error GoTo 0
+    MsgBox "The RFA form could not be initialized: " & _
+        startupErrorDescription, _
+        vbCritical, "RFA Startup"
+End Sub
+Private Sub CallDatabaseLoc()
+    Dim firstRosterPath As String
+    Dim secondRosterPath As String
+    Dim errorMessage As String
 
+    If Not TryLoadConfiguration(firstRosterPath, secondRosterPath, errorMessage) Then
+        Err.Raise vbObjectError + 701, "CallDatabaseLoc", errorMessage
+    End If
+
+    NewDatabaseLoc1 = firstRosterPath
+    NewDatabaseLoc2 = secondRosterPath
 End Sub
 
 Sub ReadDataFromCloseFile()
-    On Error GoTo ErrHandler
-    Application.ScreenUpdating = False
-    Application.Visible = False
-    
-    Dim src As Workbook
-    Dim rngData As Range
-    Dim rngCell As Range
-    Dim i As Long
-    Dim j As Long
-    Dim k As Long
-    Dim x As Integer
-    Dim iTotalRows As Integer
-    Dim iCnt As Integer         ' COUNTER.
-    Dim NewDateAgain As Date
-    ' OPEN THE SOURCE EXCEL WORKBOOK IN "READ ONLY MODE".
-    'Set src = Workbooks.Open("G:\05 TG Training\02 Training\_TRAINERS FOLDER\ARTHUR\NEW PROJECT\sample.xlsx", True, True)
-    
-    'Set src = Workbooks.Open("G:\05 TG Training\02 Training\_TRAINERS FOLDER\ARTHUR\NEW PROJECT\CYCLE58.xlsx", True, True)
-    Application.DisplayAlerts = False
-    'Set src = Workbooks.Open("G:\05 TG Training\02 Training\_TRAINERS FOLDER\ARTHUR\NEW PROJECT\CYCLE 58 ROSTER SUMMARY (Dealer, Pit Supervisor and Pit Manager).xlsx", Password:="<REDACTED>", WriteResPassword:="<REDACTED>", ReadOnly:=True, UpdateLinks:=True)
-    Set src = Workbooks.Open(NewDatabaseLoc1, Password:="<REDACTED>", WriteResPassword:="<REDACTED>", ReadOnly:=True, UpdateLinks:=True)
-    
-    'src.Unprotect Password:="<REDACTED>"
-    src.Worksheets("Current Roster").Unprotect Password:="<REDACTED>"
-    'ActiveSheet.Unprotect Password:="<REDACTED>"
-    Application.AskToUpdateLinks = True
-    Application.DisplayAlerts = True
-    
-    ' GET THE TOTAL ROWS FROM THE SOURCE WORKBOOK.
-    iTotalRows = src.Worksheets("Current Roster").Range("A1:A" & Cells(Rows.Count, "A").End(xlUp).Row).Rows.Count
-    Set rngData = src.Worksheets("Current Roster").Range("A1").CurrentRegion
+    Call LoadStartupDataWithRetry
+End Sub
 
-    'iTotalRows = src.Worksheets("Sheet1").Range("A1:A" & Cells(Rows.Count, "A").End(xlUp).Row).Rows.Count
-    'Set rngData = src.Worksheets("Sheet1").Range("A1").CurrentRegion
+Private Function LoadStartupDataWithRetry() As Boolean
+    Dim errorMessage As String
+    Dim userChoice As VbMsgBoxResult
 
-    For Each rngCell In rngData.Rows(1).Cells
-        Me.lvFirstCycle.ColumnHeaders.Add Text:=rngCell.Value, Width:=90
-    Next rngCell
+    Call StopTimer
+    SetTrackingEnabled False
 
-    RowCount = rngData.Rows.Count
-    ColCount = rngData.Columns.Count
-
-   x = 1
-    ' COPY DATA FROM SOURCE (CLOSE WORKGROUP) TO THE DESTINATION WORKBOOK.
-    For iCnt = 1 To iTotalRows
-        'Worksheets("Sheet1").Range("B" & iCnt).Formula =
-        '    src.Worksheets("Sheet1").Range("B" & iCnt).Formula
-    Next iCnt
-    
-    lvListofAvailableShift.ListItems.Clear
-    
-    For i = 3 To RowCount
-        If rngData(i, 1).Value = "-" Then
-        Else
-            Set LstItem = Me.lvFirstCycle.ListItems.Add(Text:=rngData(i, 1).Value)
-            
-            For j = 2 To ColCount
-                    LstItem.ListSubItems.Add Text:=rngData(i, j).Value
-                    If x = 1 Then
-                        NewDate = rngData(i - 1, j + 1).Value
-                    'msg = MsgBox(NewDate)
-                        x = 0
-                    End If
-                'If UCase(rngData(i, j).Value) = "EL" Or UCase(rngData(i, j).Value) = "SL" Or UCase(rngData(i, j).Value) = "SUP" Or UCase(rngData(i, j).Value) = "DLR" Or UCase(rngData(i, j).Value) = "REST" Or UCase(rngData(i, j).Value) = "BER" Or UCase(rngData(i, j).Value) = "ALWP" Or UCase(rngData(i, j).Value) = "NWH" Or UCase(rngData(i, j).Value) = "BIR" Or UCase(rngData(i, j).Value) = "SOLO" Or UCase(rngData(i, j).Value) = "VL" Then
-                'Else
-                '    Set LstItem = Me.lvListofAvailableShift.ListItems.Add(Text:=rngData(i, j).Value)
-                'End If
-                
-            Next j
+    Do
+        errorMessage = ""
+        If TryLoadStartupData(errorMessage) Then
+            mHasValidRosterData = True
+            SetTrackingEnabled True
+            Call CallShiftStarts
+            Call SetTimer
+            LoadStartupDataWithRetry = True
+            Exit Function
         End If
-    Next i
-    
-    
-    ' CLOSE THE SOURCE FILE.
-    src.Close False             ' FALSE - DON'T SAVE THE SOURCE FILE.
-    Set src = Nothing
-    
-    ' OPEN THE SOURCE EXCEL WORKBOOK IN "READ ONLY MODE".
-    'Set src = Workbooks.Open("G:\05 TG Training\02 Training\_TRAINERS FOLDER\ARTHUR\NEW PROJECT\CYCLE59.xlsx", True, True)
 
-    Application.AskToUpdateLinks = False
+        mHasValidRosterData = False
+        userChoice = MsgBox( _
+            errorMessage & vbCrLf & vbCrLf & _
+            "Correct the file or network problem, then select Retry." & vbCrLf & _
+            "Select Cancel to leave tracking disabled.", _
+            vbCritical + vbRetryCancel, _
+            "RFA Data Loading")
+
+        If userChoice <> vbRetry Then
+            SetTrackingEnabled False
+            Application.EnableEvents = True
+            Application.ScreenUpdating = True
+            Application.DisplayAlerts = True
+            Application.AskToUpdateLinks = True
+            Application.Visible = True
+            On Error Resume Next
+            ThisWorkbook.Windows(1).Visible = True
+            On Error GoTo 0
+            LoadStartupDataWithRetry = False
+            Exit Function
+        End If
+    Loop
+End Function
+
+Private Function TryLoadStartupData(ByRef errorMessage As String) As Boolean
+    Dim firstRosterPath As String
+    Dim secondRosterPath As String
+    Dim firstRosterData As Variant
+    Dim secondRosterData As Variant
+    Dim firstStartDate As Date
+    Dim secondStartDate As Date
+    Dim loadSucceeded As Boolean
+    Dim unexpectedNumber As Long
+    Dim unexpectedDescription As String
+
+    On Error GoTo UnexpectedFailure
+
+    mIsLoadingData = True
+    Application.ScreenUpdating = False
     Application.DisplayAlerts = False
-    
-    'Set src = Workbooks.Open("G:\05 TG Training\02 Training\_TRAINERS FOLDER\ARTHUR\NEW PROJECT\CYCLE 59 ROSTER SUMMARY (Dealer, Pit Supervisor and Pit Manager).xlsx", Password:="<REDACTED>", WriteResPassword:="<REDACTED>", ReadOnly:=True, UpdateLinks:=True)
-    Set src = Workbooks.Open(NewDatabaseLoc2, Password:="<REDACTED>", WriteResPassword:="<REDACTED>", ReadOnly:=True, UpdateLinks:=True)
-    'ActiveSheet.Unprotect Password:="<REDACTED>"
-    src.Worksheets("Current Roster").Unprotect Password:="<REDACTED>"
-    Application.AskToUpdateLinks = True
-    Application.DisplayAlerts = True
-    
-    ' GET THE TOTAL ROWS FROM THE SOURCE WORKBOOK.
-    iTotalRows = src.Worksheets("Current Roster").Range("A1:A" & Cells(Rows.Count, "A").End(xlUp).Row).Rows.Count
-    Set rngData = src.Worksheets("Current Roster").Range("A1").CurrentRegion
+    Application.EnableEvents = False
+    Application.AskToUpdateLinks = False
 
-    'iTotalRows = src.Worksheets("Sheet1").Range("A1:A" & Cells(Rows.Count, "A").End(xlUp).Row).Rows.Count
-    'Set rngData = src.Worksheets("Sheet1").Range("A1").CurrentRegion
+    If Not TryLoadConfiguration( _
+            firstRosterPath, secondRosterPath, errorMessage) Then
+        GoTo CleanUp
+    End If
 
-    For Each rngCell In rngData.Rows(1).Cells
-        Me.lvSecondCycle.ColumnHeaders.Add Text:=rngCell.Value, Width:=90
-    Next rngCell
+    If Not TryLoadRoster( _
+            firstRosterPath, "First-cycle roster", firstRosterData, _
+            firstStartDate, errorMessage) Then
+        GoTo CleanUp
+    End If
 
-    RowCount = rngData.Rows.Count
-    ColCount = rngData.Columns.Count
+    If Not TryLoadRoster( _
+            secondRosterPath, "Second-cycle roster", secondRosterData, _
+            secondStartDate, errorMessage) Then
+        GoTo CleanUp
+    End If
 
-   x = 1
-    
-    For i = 3 To RowCount
-    
-        Set LstItem = Me.lvSecondCycle.ListItems.Add(Text:=rngData(i, 1).Value)
-        For j = 2 To ColCount
-            LstItem.ListSubItems.Add Text:=rngData(i, j).Value
-        Next j
-    Next i
-    
-    
-    ' CLOSE THE SOURCE FILE.
-    src.Close False             ' FALSE - DON'T SAVE THE SOURCE FILE.
-    Set src = Nothing
-    
-    
-    
-    j = 1
-    k = 1
-        For i = 1 To 28
-            NewDateAgain = DateAdd("d", i - 1, NewDate)
-            Set li = lvDate.ListItems.Add(, , Format(NewDateAgain, "mm/dd/yyyy"))
-            cmbDate.AddItem Format(NewDateAgain, "mm/dd/yyyy")
-            li.SubItems(1) = j + 1
-            If k < 15 Then
-                li.SubItems(2) = "First Cycle"
-            Else
-                li.SubItems(2) = "Second Cycle"
-            End If
-            If j = 14 Then
-                j = 1
-            Else
-                j = j + 1
-            End If
+    NewDatabaseLoc1 = firstRosterPath
+    NewDatabaseLoc2 = secondRosterPath
 
-            k = k + 1
-        Next i
-    
-Exit Sub
-ErrHandler:
+    PopulateRosterControls firstRosterData, secondRosterData, firstStartDate
+    InitializeFilterChoices
+    SelectDefaultDate
+    loadSucceeded = True
+    GoTo CleanUp
+
+UnexpectedFailure:
+    unexpectedNumber = Err.Number
+    unexpectedDescription = Err.Description
+    errorMessage = BuildLoadError( _
+        "Unexpected startup error", "", unexpectedNumber, _
+        unexpectedDescription, _
+        "Close other Excel dialogs and verify the network connection.")
+
+CleanUp:
+    mIsLoadingData = False
     Application.EnableEvents = True
     Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    Application.AskToUpdateLinks = True
+    TryLoadStartupData = loadSucceeded
+End Function
+
+Private Function TryLoadConfiguration( _
+        ByRef firstRosterPath As String, _
+        ByRef secondRosterPath As String, _
+        ByRef errorMessage As String) As Boolean
+
+    Const CONFIG_PATH As String = "\\mcp.com\dept$\FP&A\RFA\Database.xlsx"
+
+    Dim sourceWorkbook As Workbook
+    Dim sourceSheet As Worksheet
+    Dim loadSucceeded As Boolean
+    Dim failureNumber As Long
+    Dim failureDescription As String
+
+    On Error GoTo OpenFailure
+
+    If Not FileIsAccessible(CONFIG_PATH) Then
+        errorMessage = BuildLoadError( _
+            "Configuration file is missing or inaccessible", CONFIG_PATH, _
+            0, "", _
+            "Connect to the company network or VPN and verify file permissions.")
+        GoTo CleanUp
+    End If
+
+    Set sourceWorkbook = Workbooks.Open( _
+        Filename:=CONFIG_PATH, UpdateLinks:=0, ReadOnly:=True, _
+        AddToMru:=False)
+
+    Set sourceSheet = GetWorksheet(sourceWorkbook, "Sheet1")
+    If sourceSheet Is Nothing Then
+        errorMessage = BuildLoadError( _
+            "Configuration workbook is invalid", CONFIG_PATH, 0, "", _
+            "Add a worksheet named Sheet1 containing roster paths in A1 and B1.")
+        GoTo CleanUp
+    End If
+
+    If IsError(sourceSheet.Range("A1").Value) _
+            Or IsError(sourceSheet.Range("B1").Value) Then
+        errorMessage = BuildLoadError( _
+            "Configuration workbook contains invalid roster paths", _
+            CONFIG_PATH, 0, "", _
+            "Replace errors in Sheet1 cells A1 and B1 with valid file paths.")
+        GoTo CleanUp
+    End If
+
+    firstRosterPath = Trim$(CStr(sourceSheet.Range("A1").Value2))
+    secondRosterPath = Trim$(CStr(sourceSheet.Range("B1").Value2))
+
+    If Len(firstRosterPath) = 0 Or Len(secondRosterPath) = 0 Then
+        errorMessage = BuildLoadError( _
+            "Configuration workbook is incomplete", CONFIG_PATH, 0, "", _
+            "Enter the first-cycle path in A1 and second-cycle path in B1.")
+        GoTo CleanUp
+    End If
+
+    If Not FileIsAccessible(firstRosterPath) Then
+        errorMessage = BuildLoadError( _
+            "First-cycle roster is missing or inaccessible", _
+            firstRosterPath, 0, "", _
+            "Verify the path in Database.xlsx Sheet1!A1 and network access.")
+        GoTo CleanUp
+    End If
+
+    If Not FileIsAccessible(secondRosterPath) Then
+        errorMessage = BuildLoadError( _
+            "Second-cycle roster is missing or inaccessible", _
+            secondRosterPath, 0, "", _
+            "Verify the path in Database.xlsx Sheet1!B1 and network access.")
+        GoTo CleanUp
+    End If
+
+    loadSucceeded = True
+    GoTo CleanUp
+
+OpenFailure:
+    failureNumber = Err.Number
+    failureDescription = Err.Description
+    errorMessage = BuildLoadError( _
+        "Configuration file could not be opened", CONFIG_PATH, _
+        failureNumber, failureDescription, _
+        "Verify network access, file permissions, and that the workbook is valid.")
+
+CleanUp:
+    On Error Resume Next
+    If Not sourceWorkbook Is Nothing Then sourceWorkbook.Close SaveChanges:=False
+    Set sourceSheet = Nothing
+    Set sourceWorkbook = Nothing
+    On Error GoTo 0
+    TryLoadConfiguration = loadSucceeded
+End Function
+
+Private Function TryLoadRoster( _
+        ByVal rosterPath As String, _
+        ByVal rosterRole As String, _
+        ByRef rosterData As Variant, _
+        ByRef startDate As Date, _
+        ByRef errorMessage As String) As Boolean
+
+    Dim sourceWorkbook As Workbook
+    Dim rosterSheet As Worksheet
+    Dim rosterRange As Range
+    Dim loadSucceeded As Boolean
+    Dim hasEmployee As Boolean
+    Dim rowIndex As Long
+    Dim failureNumber As Long
+    Dim failureDescription As String
+
+    On Error GoTo OpenFailure
+
+    If Not FileIsAccessible(rosterPath) Then
+        errorMessage = BuildLoadError( _
+            rosterRole & " is missing or inaccessible", rosterPath, 0, "", _
+            "Verify the configured path, network connection, and permissions.")
+        GoTo CleanUp
+    End If
+
+    Set sourceWorkbook = Workbooks.Open( _
+        Filename:=rosterPath, UpdateLinks:=0, ReadOnly:=True, _
+        Password:="<REDACTED>", WriteResPassword:="<REDACTED>", _
+        AddToMru:=False)
+
+    Set rosterSheet = GetWorksheet(sourceWorkbook, "Current Roster")
+    If rosterSheet Is Nothing Then
+        errorMessage = BuildLoadError( _
+            rosterRole & " is invalid", rosterPath, 0, "", _
+            "Add a worksheet named Current Roster.")
+        GoTo CleanUp
+    End If
+
+    Set rosterRange = rosterSheet.Range("A1").CurrentRegion
+    If rosterRange.Rows.Count < 3 Or rosterRange.Columns.Count < 16 Then
+        errorMessage = BuildLoadError( _
+            rosterRole & " has an invalid layout", rosterPath, 0, "", _
+            "Current Roster must contain at least 3 rows and 16 columns.")
+        GoTo CleanUp
+    End If
+
+    rosterData = rosterRange.Value2
+    If Not IsDate(rosterData(2, 3)) Then
+        errorMessage = BuildLoadError( _
+            rosterRole & " has an invalid start date", rosterPath, 0, "", _
+            "Current Roster cell C2 must contain a valid cycle start date.")
+        GoTo CleanUp
+    End If
+
+    For rowIndex = 3 To UBound(rosterData, 1)
+        If Len(SafeCellText(rosterData(rowIndex, 1))) > 0 _
+                And SafeCellText(rosterData(rowIndex, 1)) <> "-" Then
+            hasEmployee = True
+            Exit For
+        End If
+    Next rowIndex
+
+    If Not hasEmployee Then
+        errorMessage = BuildLoadError( _
+            rosterRole & " contains no employee rows", rosterPath, 0, "", _
+            "Add at least one employee beginning on row 3 of Current Roster.")
+        GoTo CleanUp
+    End If
+
+    startDate = CDate(rosterData(2, 3))
+    loadSucceeded = True
+    GoTo CleanUp
+
+OpenFailure:
+    failureNumber = Err.Number
+    failureDescription = Err.Description
+    errorMessage = BuildLoadError( _
+        rosterRole & " could not be opened or read", rosterPath, _
+        failureNumber, failureDescription, _
+        "Verify the file format, access permissions, and workbook credentials.")
+
+CleanUp:
+    On Error Resume Next
+    If Not sourceWorkbook Is Nothing Then sourceWorkbook.Close SaveChanges:=False
+    Set rosterRange = Nothing
+    Set rosterSheet = Nothing
+    Set sourceWorkbook = Nothing
+    On Error GoTo 0
+    TryLoadRoster = loadSucceeded
+End Function
+
+Private Sub PopulateRosterControls( _
+        ByVal firstRosterData As Variant, _
+        ByVal secondRosterData As Variant, _
+        ByVal firstStartDate As Date)
+
+    Dim rowIndex As Long
+    Dim columnIndex As Long
+    Dim dayIndex As Long
+    Dim cycleColumn As Long
+    Dim item As ListItem
+    Dim employeeText As String
+    Dim mappedDate As Date
+
+    lvFirstCycle.ListItems.Clear
+    lvFirstCycle.ColumnHeaders.Clear
+    lvSecondCycle.ListItems.Clear
+    lvSecondCycle.ColumnHeaders.Clear
+    lvDate.ListItems.Clear
+    lvListofAvailableShift.ListItems.Clear
+    lvListTrainee.ListItems.Clear
+    lvAll.ListItems.Clear
+    lvListofAbsent.ListItems.Clear
+    cmbDate.Clear
+
+    For columnIndex = 1 To UBound(firstRosterData, 2)
+        lvFirstCycle.ColumnHeaders.Add , , _
+            SafeCellText(firstRosterData(1, columnIndex)), 90
+    Next columnIndex
+
+    For rowIndex = 3 To UBound(firstRosterData, 1)
+        employeeText = SafeCellText(firstRosterData(rowIndex, 1))
+        If Len(employeeText) > 0 And employeeText <> "-" Then
+            Set item = lvFirstCycle.ListItems.Add(Text:=employeeText)
+            For columnIndex = 2 To UBound(firstRosterData, 2)
+                item.ListSubItems.Add Text:= _
+                    SafeCellText(firstRosterData(rowIndex, columnIndex))
+            Next columnIndex
+        End If
+    Next rowIndex
+
+    For columnIndex = 1 To UBound(secondRosterData, 2)
+        lvSecondCycle.ColumnHeaders.Add , , _
+            SafeCellText(secondRosterData(1, columnIndex)), 90
+    Next columnIndex
+
+    For rowIndex = 3 To UBound(secondRosterData, 1)
+        employeeText = SafeCellText(secondRosterData(rowIndex, 1))
+        If Len(employeeText) > 0 And employeeText <> "-" Then
+            Set item = lvSecondCycle.ListItems.Add(Text:=employeeText)
+            For columnIndex = 2 To UBound(secondRosterData, 2)
+                item.ListSubItems.Add Text:= _
+                    SafeCellText(secondRosterData(rowIndex, columnIndex))
+            Next columnIndex
+        End If
+    Next rowIndex
+
+    cycleColumn = 1
+    For dayIndex = 1 To 28
+        mappedDate = DateAdd("d", dayIndex - 1, firstStartDate)
+        Set item = lvDate.ListItems.Add(, , Format$(mappedDate, "mm/dd/yyyy"))
+        cmbDate.AddItem Format$(mappedDate, "mm/dd/yyyy")
+        item.SubItems(1) = cycleColumn + 1
+        If dayIndex <= 14 Then
+            item.SubItems(2) = "First Cycle"
+        Else
+            item.SubItems(2) = "Second Cycle"
+        End If
+        If cycleColumn = 14 Then
+            cycleColumn = 1
+        Else
+            cycleColumn = cycleColumn + 1
+        End If
+    Next dayIndex
+
+    ClearAll
 End Sub
+
+Private Sub InitializeFilterChoices()
+    Dim currentTime As String
+
+    cmbShift.Clear
+    cmbShift.AddItem "All Shift"
+    cmbShift.AddItem "Morning Shift"
+    cmbShift.AddItem "Day Shift"
+    cmbShift.AddItem "Late Day Shift"
+    cmbShift.AddItem "Night Shift"
+    cmbShift.AddItem "Late Night Shift"
+    cmbShift.Text = "All Shift"
+
+    cmbPosition.Clear
+    cmbPosition.AddItem "All"
+    cmbPosition.AddItem "Dealer"
+    cmbPosition.AddItem "Pit Supervisor"
+    cmbPosition.AddItem "Pit Manager"
+    cmbPosition.Text = "All"
+
+    currentTime = Format$(Time(), "HHMM")
+    If currentTime > "0500" And currentTime < "1200" Then
+        cmbShift.Text = "Morning Shift"
+    ElseIf currentTime > "1159" And currentTime < "1800" Then
+        cmbShift.Text = "Day Shift"
+    ElseIf currentTime > "1759" And currentTime < "1930" Then
+        cmbShift.Text = "Late Day Shift"
+    ElseIf currentTime > "1929" And currentTime < "2359" Then
+        cmbShift.Text = "Night Shift"
+    ElseIf currentTime > "0111" And currentTime < "0500" Then
+        cmbShift.Text = "Late Night Shift"
+    End If
+
+    txtSearch.Text = ""
+    txtSearch.Enabled = False
+End Sub
+
+Private Sub SelectDefaultDate()
+    Dim todayText As String
+    Dim itemIndex As Long
+    Dim foundToday As Boolean
+
+    todayText = Format$(Date, "MM/DD/YYYY")
+    For itemIndex = 0 To cmbDate.ListCount - 1
+        If StrComp(todayText, cmbDate.List(itemIndex), vbTextCompare) = 0 Then
+            cmbDate.Text = todayText
+            foundToday = True
+            Exit For
+        End If
+    Next itemIndex
+
+    If Not foundToday And cmbDate.ListCount > 0 Then
+        MsgBox "Today's Date (" & todayText & _
+            ") is not available in the validated roster period.", _
+            vbExclamation, "ETS Confirmation!"
+        cmbDate.Text = cmbDate.List(cmbDate.ListCount - 1)
+    End If
+End Sub
+
+Private Sub SetTrackingEnabled(ByVal isEnabled As Boolean)
+    On Error Resume Next
+    cmbDate.Enabled = isEnabled
+    cmbPosition.Enabled = isEnabled
+    cmbShift.Enabled = isEnabled
+    cmdTrackNow.Enabled = isEnabled
+    cmdPrint.Enabled = False
+    txtSearch.Enabled = False
+    cmdRefresh.Enabled = True
+    On Error GoTo 0
+End Sub
+
+Private Function FileIsAccessible(ByVal filePath As String) As Boolean
+    On Error GoTo NotAccessible
+    If Len(Trim$(filePath)) = 0 Then Exit Function
+    FileIsAccessible = Len(Dir$(filePath, _
+        vbNormal Or vbReadOnly Or vbHidden Or vbSystem)) > 0
+    Exit Function
+
+NotAccessible:
+    FileIsAccessible = False
+End Function
+
+Private Function GetWorksheet( _
+        ByVal sourceWorkbook As Workbook, _
+        ByVal worksheetName As String) As Worksheet
+
+    On Error Resume Next
+    Set GetWorksheet = sourceWorkbook.Worksheets(worksheetName)
+    On Error GoTo 0
+End Function
+
+Private Function SafeCellText(ByVal cellValue As Variant) As String
+    If IsError(cellValue) Or IsNull(cellValue) Or IsEmpty(cellValue) Then
+        SafeCellText = ""
+    Else
+        SafeCellText = Trim$(CStr(cellValue))
+    End If
+End Function
+
+Private Function BuildLoadError( _
+        ByVal heading As String, _
+        ByVal filePath As String, _
+        ByVal errorNumber As Long, _
+        ByVal errorDescription As String, _
+        ByVal correctiveAction As String) As String
+
+    Dim message As String
+
+    message = heading
+    If Len(filePath) > 0 Then message = message & vbCrLf & "File: " & filePath
+    If errorNumber <> 0 Then _
+        message = message & vbCrLf & "Excel error " & _
+            CStr(errorNumber) & ": " & errorDescription
+    If Len(correctiveAction) > 0 Then _
+        message = message & vbCrLf & "Required action: " & correctiveAction
+    BuildLoadError = message
+End Function
 
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
     'Application.Visible = True

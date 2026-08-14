@@ -2,11 +2,11 @@
   "location": "RFA",
   "source": "Testing/Employee Tracking System V6.0.xlsm",
   "component_count": 4,
-  "procedure_count": 56,
+  "procedure_count": 68,
   "components": [
     {
       "filename": "MainWindow.frm",
-      "bytes": 168667
+      "bytes": 175391
     },
     {
       "filename": "Module1.bas",
@@ -721,19 +721,7 @@
     ],
     [
       "cmdRefresh_Click",
-      "ClearAll"
-    ],
-    [
-      "cmdRefresh_Click",
-      "LoadDataFromExcel"
-    ],
-    [
-      "cmdRefresh_Click",
-      "SetTimer"
-    ],
-    [
-      "cmdRefresh_Click",
-      "StopTimer"
+      "LoadStartupDataWithRetry"
     ],
     [
       "cmdTrackNow_Click",
@@ -797,11 +785,19 @@
     ],
     [
       "LoadDataFromExcel",
-      "ClearAll"
+      "LoadStartupDataWithRetry"
     ],
     [
-      "LoadDataFromExcel",
-      "ReadDataFromCloseFile"
+      "LoadStartupDataWithRetry",
+      "CallShiftStarts"
+    ],
+    [
+      "LoadStartupDataWithRetry",
+      "SetTimer"
+    ],
+    [
+      "LoadStartupDataWithRetry",
+      "StopTimer"
     ],
     [
       "lvListTrainee_Click",
@@ -818,6 +814,10 @@
     [
       "optSL_Click",
       "ClearAll"
+    ],
+    [
+      "ReadDataFromCloseFile",
+      "LoadStartupDataWithRetry"
     ],
     [
       "SaveToWorksheet",
@@ -866,14 +866,6 @@
     [
       "txtSearch_KeyDown",
       "LoadData"
-    ],
-    [
-      "UserForm_Initialize",
-      "CallDatabaseLoc"
-    ],
-    [
-      "UserForm_Initialize",
-      "LoadDataFromExcel"
     ]
   ]
 }
