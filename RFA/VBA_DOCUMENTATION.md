@@ -21,8 +21,8 @@ flowchart TD
     Open["Open macro-enabled workbook"] --> WOpen["Workbook_Open event"]
     WOpen --> HideExcel["Hide Excel window and show MainWindow"]
     HideExcel --> Init["Initialize form controls and ListViews"]
-    Init --> Config["Validate RFA Database.xlsx configuration"]
-    Config --> Paths["Validate both configured roster paths"]
+    Init --> Discover["Scan 03 TG Roster cycle folders"]
+    Discover --> Paths["Resolve the two highest consecutive cycles"]
     Paths --> Load1["Validate First Cycle Current Roster"]
     Paths --> Load2["Validate Second Cycle Current Roster"]
     Load1 --> Dates["Build 28-day date-to-cycle map"]
@@ -46,31 +46,34 @@ flowchart TD
 
 ## Startup and Data Loading
 
-The workbook class module contains the startup events. It is not present as a standalone `.cls` file because the export follows the repository's trimmed Budget format, which retains standard modules and UserForm code only.
+The workbook class module contains the startup events and is exported as `ThisWorkbook.cls` for manual copying into the destination workbook object.
 
 1. `Workbook_Open` hides Excel, disables screen updates and alerts, hides the current workbook window through `ThisWorkbook.Windows(1)`, and displays `MainWindow`. An unexpected startup error restores Excel and reports the captured cause.
 2. `UserForm_Initialize` configures the visible and hidden ListView controls, disables tracking and report output, and calls `LoadStartupDataWithRetry`.
-3. `TryLoadConfiguration` verifies that the network-hosted `Database.xlsx` file exists, contains `Sheet1`, and provides nonblank, accessible first- and second-cycle roster paths in cells A1 and B1.
-4. `TryLoadRoster` opens each roster read-only and verifies that it contains a `Current Roster` worksheet, a region of at least 3 rows by 16 columns, a valid cycle start date in C2, and at least one employee beginning on row 3.
-5. Both roster ranges are read into arrays before any visible or hidden form data is cleared. Only after both sources pass does `PopulateRosterControls` replace the form data and build the 28-day, two-cycle date map.
-6. The loader restores Excel application flags and enables tracking and the inactivity timer only after a complete successful load.
+3. `TryResolveLatestRosterPaths` scans `\\mcp.com\dept$\FP&A\RFA\03 TG Roster` for directories named `CYCLE <positive integer>`, ignores unrelated names, and selects the two highest cycle numbers.
+4. The resolver requires the selected cycle numbers to be consecutive and constructs each filename as `CYCLE <n> ROSTER SUMMARY (Dealer, Pit Supervisor and Pit Manager).xlsx` inside its matching folder. A missing newest file is an error; the loader does not silently fall back to an older cycle.
+5. `TryLoadRoster` opens the older cycle as First Cycle and the newest as Second Cycle, both read-only. Each workbook must contain a `Current Roster` worksheet, a region of at least 3 rows by 16 columns, a valid cycle start date in C2, and at least one employee beginning on row 3. The newer C2 date must be exactly 14 days after the older date.
+6. Both roster ranges are read into arrays before any visible or hidden form data is cleared. Only after both sources pass does `PopulateRosterControls` replace the form data and build the 28-day, two-cycle date map.
+7. The loader restores Excel application flags and enables tracking and the inactivity timer only after a complete successful load.
 
 ```mermaid
 flowchart LR
-    Config["Database.xlsx / Sheet1"] --> P1["Cell A1: first-cycle roster path"]
-    Config --> P2["Cell B1: second-cycle roster path"]
-    P1 --> R1["First-cycle Current Roster"]
-    P2 --> R2["Second-cycle Current Roster"]
+    Root["03 TG Roster"] --> Scan["Parse CYCLE number folders"]
+    Scan --> Rank["Select two highest numbers"]
+    Rank --> Sequence{"Consecutive?"}
+    Sequence -->|Yes| R1["Older: First-cycle Current Roster"]
+    Sequence -->|Yes| R2["Newest: Second-cycle Current Roster"]
+    Sequence -->|No| Choice{"Retry or Cancel?"}
     R1 --> Validate{"Both rosters valid?"}
     R2 --> Validate
     Validate -->|Yes| Memory["Commit arrays to hidden form ListViews"]
-    Validate -->|No| Choice{"Retry or Cancel?"}
-    Choice -->|Retry| Config
+    Validate -->|No| Choice
+    Choice -->|Retry| Root
     Choice -->|Cancel| Disabled["Reveal Excel; leave tracking disabled; keep Refresh available"]
     Memory --> Map["28-day date and cycle map"]
 ```
 
-Validation is all-or-nothing: a missing or invalid source never clears previously loaded form data. Error dialogs identify the configuration or roster role, show the full failing path, describe the Excel error when one is available, and state the corrective action. Retry runs the same validation again. Cancel closes any partially opened source workbook, restores Excel visibility and application state, stops the timer, disables tracking, and leaves Refresh enabled so the operator can retry later.
+Validation is all-or-nothing: an inaccessible root, missing or nonconsecutive cycle, missing roster, or invalid source never clears previously loaded form data. Error dialogs identify the discovery or roster failure, show the full failing path, describe the Excel error when one is available, and state the corrective action. Retry scans the folder again, so a newly published cycle is picked up automatically. Cancel closes any partially opened source workbook, restores Excel visibility and application state, stops the timer, disables tracking, and leaves Refresh enabled so the operator can retry later.
 
 ## Selection and Tracking
 
@@ -163,7 +166,7 @@ Many form events cancel and reschedule this timer. The workbook class also reset
 | `Module2.bas` | Standard module | Makes the UserForm appear as a taskbar application through Windows APIs |
 | `Module3.bas` | Standard module | Schedules, cancels, and performs inactivity shutdown |
 
-The retained components contain 50 active or reachable procedures and 125 detected form controls. `Sheet1`, `Sheet2`, and `Sheet3` have no executable VBA, so their empty document modules are not exported.
+The retained components contain 52 active or reachable procedures and 125 detected form controls. `Sheet1`, `Sheet2`, and `Sheet3` have no executable VBA, so their empty document modules are not exported.
 
 ## Manual VBA Import
 
@@ -179,7 +182,7 @@ The exported form source contains `<REDACTED>` in place of the locally embedded 
 |---|---|
 | Form lifecycle | `UserForm_Initialize`, `UserForm_Activate`, `UserForm_QueryClose`, `UserForm_Terminate` |
 | Workbook events | `Workbook_Open`, `Workbook_BeforeClose`, `Workbook_SheetCalculate`, `Workbook_SheetSelectionChange` |
-| Configuration and import | `LoadStartupDataWithRetry`, `TryLoadStartupData`, `TryLoadConfiguration`, `TryLoadRoster`, `PopulateRosterControls`, `InitializeFilterChoices`, `SelectDefaultDate` |
+| Cycle discovery and import | `LoadStartupDataWithRetry`, `TryLoadStartupData`, `TryResolveLatestRosterPaths`, `TryParseCycleFolderName`, `FolderIsAccessible`, `TryLoadRoster`, `PopulateRosterControls`, `InitializeFilterChoices`, `SelectDefaultDate` |
 | Selector reactions | `cmbDate_Change`, `cmbPosition_Change`, `cmbShift_Change`, `CallShiftStarts` |
 | Main tracking | `cmdTrackNow_Click`, `FirstCycle`, `SecondCycle`, `LookForRecordFirst`, `LookForRecordSecond` |
 | Available shifts | `LookForRecordFirstForShifting`, `LookForRecordSecondForShifting` |
@@ -196,14 +199,14 @@ The V6.0 cleanup removed 17 unreferenced procedures and five empty event handler
 - Microsoft Excel with macros enabled.
 - Windows; the project calls `user32.dll` and uses Windows-specific window handles and styles.
 - Microsoft ListView/Common Controls support used by the form's ListView controls.
-- Access to the internal network configuration workbook, both roster workbooks, and the RFA output share.
+- Access to the `03 TG Roster` network folder, the two latest consecutive roster workbooks, and the RFA output share.
 - A `Current Roster` worksheet with the layout expected by the positional ListView logic.
 - A report template on `Sheet1`, including the cells used for the report date, shift, and output filename.
 
 ## Risks and Maintenance Notes
 
 1. **Embedded credential:** A workbook/worksheet password is hard-coded in the original VBA. It should be removed from source code and supplied through an approved secure mechanism.
-2. **Network coupling:** Configuration, roster loading, and PDF output depend on internal network paths. There is no offline fallback.
+2. **Network coupling:** Cycle discovery, roster loading, and PDF output depend on internal network paths. There is no offline fallback.
 3. **Broad Excel shutdown:** Several routines call `Application.Quit`, which can close the entire Excel instance rather than only this workbook.
 4. **Legacy error handling outside startup:** Startup and roster refresh now use contextual cleanup and Retry/Cancel recovery, but some unrelated legacy handlers still suppress errors or show only a generic message.
 5. **Unqualified Excel objects:** Several `Cells`, `Rows`, `Range`, and `Sheets` references rely on whichever workbook or worksheet is active.

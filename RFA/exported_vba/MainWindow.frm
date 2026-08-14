@@ -18,9 +18,6 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_TemplateDerived = False
 Attribute VB_Customizable = False
-Dim NewDatabaseLoc1 As String
-Dim NewDatabaseLoc2 As String
-
 Dim NewColumn As Long
 Dim NewCycle As String
 Dim NewShiftToday As String
@@ -1619,7 +1616,7 @@ Private Function TryLoadStartupData(ByRef errorMessage As String) As Boolean
     Application.EnableEvents = False
     Application.AskToUpdateLinks = False
 
-    If Not TryLoadConfiguration( _
+    If Not TryResolveLatestRosterPaths( _
             firstRosterPath, secondRosterPath, errorMessage) Then
         GoTo CleanUp
     End If
@@ -1636,8 +1633,15 @@ Private Function TryLoadStartupData(ByRef errorMessage As String) As Boolean
         GoTo CleanUp
     End If
 
-    NewDatabaseLoc1 = firstRosterPath
-    NewDatabaseLoc2 = secondRosterPath
+    If DateValue(secondStartDate) <> _
+            DateAdd("d", 14, DateValue(firstStartDate)) Then
+        errorMessage = BuildLoadError( _
+            "Roster start dates are not consecutive", secondRosterPath, _
+            0, "", _
+            "Current Roster!C2 in the newer cycle must be exactly " & _
+            "14 days after Current Roster!C2 in the previous cycle.")
+        GoTo CleanUp
+    End If
 
     PopulateRosterControls firstRosterData, secondRosterData, firstStartDate
     InitializeFilterChoices
@@ -1662,94 +1666,139 @@ CleanUp:
     TryLoadStartupData = loadSucceeded
 End Function
 
-Private Function TryLoadConfiguration( _
+Private Function TryResolveLatestRosterPaths( _
         ByRef firstRosterPath As String, _
         ByRef secondRosterPath As String, _
         ByRef errorMessage As String) As Boolean
 
-    Const CONFIG_PATH As String = "\\mcp.com\dept$\FP&A\RFA\Database.xlsx"
+    Const ROSTER_ROOT As String = _
+        "\\mcp.com\dept$\FP&A\RFA\03 TG Roster"
+    Const ROSTER_SUFFIX As String = _
+        " ROSTER SUMMARY (Dealer, Pit Supervisor and Pit Manager).xlsx"
 
-    Dim sourceWorkbook As Workbook
-    Dim sourceSheet As Worksheet
-    Dim loadSucceeded As Boolean
+    Dim folderName As String
+    Dim folderPath As String
+    Dim cycleNumber As Long
+    Dim latestCycle As Long
+    Dim previousCycle As Long
+    Dim latestFolderName As String
+    Dim previousFolderName As String
     Dim failureNumber As Long
     Dim failureDescription As String
 
-    On Error GoTo OpenFailure
+    On Error GoTo DiscoveryFailure
 
-    If Not FileIsAccessible(CONFIG_PATH) Then
+    If Not FolderIsAccessible(ROSTER_ROOT) Then
         errorMessage = BuildLoadError( _
-            "Configuration file is missing or inaccessible", CONFIG_PATH, _
+            "Roster root folder is missing or inaccessible", ROSTER_ROOT, _
             0, "", _
-            "Connect to the company network or VPN and verify file permissions.")
-        GoTo CleanUp
+            "Connect to the company network or VPN and verify folder permissions.")
+        Exit Function
     End If
 
-    Set sourceWorkbook = Workbooks.Open( _
-        Filename:=CONFIG_PATH, UpdateLinks:=0, ReadOnly:=True, _
-        AddToMru:=False)
+    folderName = Dir$( _
+        ROSTER_ROOT & "\*", _
+        vbDirectory Or vbHidden Or vbSystem Or vbReadOnly)
+    Do While Len(folderName) > 0
+        If folderName <> "." And folderName <> ".." Then
+            folderPath = ROSTER_ROOT & "\" & folderName
+            If (GetAttr(folderPath) And vbDirectory) = vbDirectory Then
+                If TryParseCycleFolderName(folderName, cycleNumber) Then
+                    If cycleNumber > latestCycle Then
+                        previousCycle = latestCycle
+                        previousFolderName = latestFolderName
+                        latestCycle = cycleNumber
+                        latestFolderName = folderName
+                    ElseIf cycleNumber > previousCycle _
+                            And cycleNumber < latestCycle Then
+                        previousCycle = cycleNumber
+                        previousFolderName = folderName
+                    End If
+                End If
+            End If
+        End If
+        folderName = Dir$()
+    Loop
 
-    Set sourceSheet = GetWorksheet(sourceWorkbook, "Sheet1")
-    If sourceSheet Is Nothing Then
+    If previousCycle = 0 Or latestCycle = 0 Then
         errorMessage = BuildLoadError( _
-            "Configuration workbook is invalid", CONFIG_PATH, 0, "", _
-            "Add a worksheet named Sheet1 containing roster paths in A1 and B1.")
-        GoTo CleanUp
+            "Fewer than two cycle folders were found", ROSTER_ROOT, 0, "", _
+            "Provide at least two folders named CYCLE <number>.")
+        Exit Function
     End If
 
-    If IsError(sourceSheet.Range("A1").Value) _
-            Or IsError(sourceSheet.Range("B1").Value) Then
+    If latestCycle <> previousCycle + 1 Then
         errorMessage = BuildLoadError( _
-            "Configuration workbook contains invalid roster paths", _
-            CONFIG_PATH, 0, "", _
-            "Replace errors in Sheet1 cells A1 and B1 with valid file paths.")
-        GoTo CleanUp
+            "Latest cycle folders are not consecutive (" & _
+            previousFolderName & " and " & latestFolderName & ")", _
+            ROSTER_ROOT, 0, "", _
+            "Publish the missing cycle folder before retrying.")
+        Exit Function
     End If
 
-    firstRosterPath = Trim$(CStr(sourceSheet.Range("A1").Value2))
-    secondRosterPath = Trim$(CStr(sourceSheet.Range("B1").Value2))
-
-    If Len(firstRosterPath) = 0 Or Len(secondRosterPath) = 0 Then
-        errorMessage = BuildLoadError( _
-            "Configuration workbook is incomplete", CONFIG_PATH, 0, "", _
-            "Enter the first-cycle path in A1 and second-cycle path in B1.")
-        GoTo CleanUp
-    End If
+    firstRosterPath = ROSTER_ROOT & "\" & previousFolderName & "\" & _
+        previousFolderName & ROSTER_SUFFIX
+    secondRosterPath = ROSTER_ROOT & "\" & latestFolderName & "\" & _
+        latestFolderName & ROSTER_SUFFIX
 
     If Not FileIsAccessible(firstRosterPath) Then
         errorMessage = BuildLoadError( _
-            "First-cycle roster is missing or inaccessible", _
+            previousFolderName & " roster is missing or inaccessible", _
             firstRosterPath, 0, "", _
-            "Verify the path in Database.xlsx Sheet1!A1 and network access.")
-        GoTo CleanUp
+            "Publish the expected roster file or verify network permissions.")
+        Exit Function
     End If
 
     If Not FileIsAccessible(secondRosterPath) Then
         errorMessage = BuildLoadError( _
-            "Second-cycle roster is missing or inaccessible", _
+            latestFolderName & " roster is missing or inaccessible", _
             secondRosterPath, 0, "", _
-            "Verify the path in Database.xlsx Sheet1!B1 and network access.")
-        GoTo CleanUp
+            "Publish the expected roster file or verify network permissions.")
+        Exit Function
     End If
 
-    loadSucceeded = True
-    GoTo CleanUp
+    TryResolveLatestRosterPaths = True
+    Exit Function
 
-OpenFailure:
+DiscoveryFailure:
     failureNumber = Err.Number
     failureDescription = Err.Description
     errorMessage = BuildLoadError( _
-        "Configuration file could not be opened", CONFIG_PATH, _
+        "Cycle folders could not be scanned", ROSTER_ROOT, _
         failureNumber, failureDescription, _
-        "Verify network access, file permissions, and that the workbook is valid.")
+        "Verify network access, folder permissions, and cycle folder names.")
+End Function
 
-CleanUp:
-    On Error Resume Next
-    If Not sourceWorkbook Is Nothing Then sourceWorkbook.Close SaveChanges:=False
-    Set sourceSheet = Nothing
-    Set sourceWorkbook = Nothing
-    On Error GoTo 0
-    TryLoadConfiguration = loadSucceeded
+Private Function TryParseCycleFolderName( _
+        ByVal folderName As String, _
+        ByRef cycleNumber As Long) As Boolean
+
+    Const CYCLE_PREFIX As String = "CYCLE "
+
+    Dim numberText As String
+    Dim characterIndex As Long
+    Dim currentCharacter As String
+
+    On Error GoTo InvalidName
+
+    If Len(folderName) <= Len(CYCLE_PREFIX) Then Exit Function
+    If StrComp(Left$(folderName, Len(CYCLE_PREFIX)), _
+            CYCLE_PREFIX, vbTextCompare) <> 0 Then Exit Function
+
+    numberText = Mid$(folderName, Len(CYCLE_PREFIX) + 1)
+    For characterIndex = 1 To Len(numberText)
+        currentCharacter = Mid$(numberText, characterIndex, 1)
+        If currentCharacter < "0" Or currentCharacter > "9" Then _
+            Exit Function
+    Next characterIndex
+
+    cycleNumber = CLng(numberText)
+    If cycleNumber <= 0 Then Exit Function
+    TryParseCycleFolderName = True
+    Exit Function
+
+InvalidName:
+    cycleNumber = 0
 End Function
 
 Private Function TryLoadRoster( _
@@ -1999,6 +2048,17 @@ Private Function FileIsAccessible(ByVal filePath As String) As Boolean
 
 NotAccessible:
     FileIsAccessible = False
+End Function
+
+Private Function FolderIsAccessible(ByVal folderPath As String) As Boolean
+    On Error GoTo NotAccessible
+    If Len(Trim$(folderPath)) = 0 Then Exit Function
+    FolderIsAccessible = _
+        ((GetAttr(folderPath) And vbDirectory) = vbDirectory)
+    Exit Function
+
+NotAccessible:
+    FolderIsAccessible = False
 End Function
 
 Private Function GetWorksheet( _
