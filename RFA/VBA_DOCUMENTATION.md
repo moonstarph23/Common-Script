@@ -174,7 +174,7 @@ Keep `MainWindow.frm` and `MainWindow.frx` together in the same directory. In th
 
 Do not import `ThisWorkbook.cls` as an ordinary class module: that would not attach its event procedures to the workbook. Open `ThisWorkbook.cls` as source, then copy its declarations and four event procedures into the destination workbook's existing `ThisWorkbook` object. The three worksheet class modules contain no executable code, but the destination must retain the `Sheet1` report template and layout.
 
-The exported form source contains `<REDACTED>` in place of the locally embedded roster password. Replace that placeholder only in the local destination workbook. The destination also needs Microsoft ListView/Common Controls support.
+The exported form source contains `<REDACTED>` in place of the locally embedded roster password. Replace that placeholder only in the local destination workbook. List item working variables are late-bound as `Object` to avoid a compile-time `ListItem` type error after manual import. The destination still needs Microsoft ListView/Common Controls support for the form's actual ActiveX controls.
 
 ## Important Procedure Groups
 

@@ -1932,7 +1932,7 @@ Private Sub PopulateRosterControls( _
     Dim columnIndex As Long
     Dim dayIndex As Long
     Dim cycleColumn As Long
-    Dim item As ListItem
+    Dim item As Object
     Dim employeeText As String
     Dim mappedDate As Date
 
