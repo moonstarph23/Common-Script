@@ -18,6 +18,16 @@ Use `import_exported_vba.py` on Windows to replace the VBA modules and UserForms
 
 ## Preview and import
 
+For simple repeated use, open `Budget/import_exported_vba.py` and set the two variables near the top of the file:
+
+```python
+TARGET_WORKBOOK_PATH = r"C:\Path\Budget.xlsm"
+EXPORTED_VBA_FOLDER_PATH = r"C:\Path\exported_vba"
+BACKUP_FOLDER_PATH = r"C:\Path\Backups"
+```
+
+Then run `py Budget\import_exported_vba.py`. Command-line paths take priority over these variables. A blank workbook or source variable opens the corresponding Windows selection dialog. A blank backup variable stores the timestamped backup beside the target workbook.
+
 Run a read-only preview first:
 
 ```powershell
@@ -34,6 +44,8 @@ py Budget\import_exported_vba.py `
   --workbook "C:\Path\Budget.xlsm" `
   --source "C:\Path\exported_vba"
 ```
+
+Use `--backup-folder "C:\Path\Backups"` to override the configured backup folder. The destination folder must already exist.
 
 If either path is omitted, the script opens a Windows selection dialog. Before changing the VBA project, it displays the component counts and requires `REPLACE` as confirmation. Use `--yes` only for unattended execution.
 

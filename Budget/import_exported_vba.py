@@ -16,6 +16,16 @@ from pathlib import Path
 from typing import Any, Sequence
 
 
+# Optional default paths for running this file without command-line arguments.
+# Example: TARGET_WORKBOOK_PATH = r"C:\Budget\Budget.xlsm"
+# Example: EXPORTED_VBA_FOLDER_PATH = r"C:\Budget\exported_vba"
+# Example: BACKUP_FOLDER_PATH = r"C:\Budget\Backups"
+# Leave either input value blank to select it from a Windows dialog. Leave the
+# backup value blank to store timestamped backups beside the target workbook.
+TARGET_WORKBOOK_PATH = r""
+EXPORTED_VBA_FOLDER_PATH = r""
+BACKUP_FOLDER_PATH = r""
+
 SUPPORTED_WORKBOOK_EXTENSIONS = {".xlsm", ".xlsb", ".xlam", ".xltm"}
 
 VBEXT_CT_STD_MODULE = 1
@@ -203,12 +213,17 @@ def build_source_inventory(folder: Path) -> SourceInventory:
     )
 
 
-def next_backup_path(workbook_path: Path, now: datetime | None = None) -> Path:
+def next_backup_path(
+    workbook_path: Path,
+    backup_folder: Path | None = None,
+    now: datetime | None = None,
+) -> Path:
     timestamp = (now or datetime.now()).strftime("%Y%m%d_%H%M%S")
-    candidate = workbook_path.with_name(f"{workbook_path.stem}_backup_{timestamp}{workbook_path.suffix}")
+    destination = backup_folder or workbook_path.parent
+    candidate = destination / f"{workbook_path.stem}_backup_{timestamp}{workbook_path.suffix}"
     counter = 2
     while candidate.exists():
-        candidate = workbook_path.with_name(
+        candidate = destination / (
             f"{workbook_path.stem}_backup_{timestamp}_{counter}{workbook_path.suffix}"
         )
         counter += 1
@@ -265,6 +280,11 @@ def validate_workbook_path(path: Path) -> Path:
     return resolved
 
 
+def configured_path(value: str) -> Path | None:
+    value = value.strip()
+    return Path(value) if value else None
+
+
 def vb_components(vb_project: Any) -> list[Any]:
     collection = vb_project.VBComponents
     return [collection.Item(index) for index in range(1, collection.Count + 1)]
@@ -316,9 +336,15 @@ def make_replacement_plan(vb_project: Any, inventory: SourceInventory) -> Replac
     )
 
 
-def print_plan(workbook_path: Path, source_folder: Path, plan: ReplacementPlan) -> None:
+def print_plan(
+    workbook_path: Path,
+    source_folder: Path,
+    backup_folder: Path | None,
+    plan: ReplacementPlan,
+) -> None:
     print(f"Target workbook: {workbook_path}")
     print(f"Source folder:   {source_folder}")
+    print(f"Backup folder:   {backup_folder or workbook_path.parent}")
     print(f"Remove:          {len(plan.removable_names)} standard/class/form components")
     print(f"Import:          {len(plan.standard_modules)} BAS module(s)")
     print(f"Import:          {len(plan.ordinary_classes)} ordinary CLS module(s)")
@@ -402,6 +428,7 @@ def run_excel_import(
     source_folder: Path,
     inventory: SourceInventory,
     *,
+    backup_folder: Path | None,
     dry_run: bool,
     assume_yes: bool,
 ) -> None:
@@ -453,14 +480,14 @@ def run_excel_import(
             raise VbaImportError("The workbook VBA project is locked; unlock it before importing")
 
         plan = make_replacement_plan(vb_project, inventory)
-        print_plan(workbook_path, source_folder, plan)
+        print_plan(workbook_path, source_folder, backup_folder, plan)
         if dry_run:
             print("Dry run complete; the workbook was opened read-only and was not modified.")
             return
 
         confirm_replacement(assume_yes)
         workbook.Save()
-        backup_path = next_backup_path(workbook_path)
+        backup_path = next_backup_path(workbook_path, backup_folder)
         workbook.SaveCopyAs(str(backup_path))
         print(f"Backup created:  {backup_path}")
 
@@ -514,6 +541,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--workbook", type=Path, help="Target .xlsm/.xlsb/.xlam/.xltm workbook")
     parser.add_argument("--source", type=Path, help="Source exported_vba folder")
+    parser.add_argument(
+        "--backup-folder",
+        type=Path,
+        help="Backup destination; defaults to the target workbook folder",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Validate and preview without changes")
     parser.add_argument("--yes", action="store_true", help="Skip the REPLACE confirmation prompt")
     return parser.parse_args(argv)
@@ -522,13 +554,24 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     try:
-        workbook_path = validate_workbook_path(args.workbook or choose_workbook())
-        source_folder = (args.source or choose_source_folder()).expanduser().resolve()
+        workbook_path = validate_workbook_path(
+            args.workbook or configured_path(TARGET_WORKBOOK_PATH) or choose_workbook()
+        )
+        source_folder = (
+            args.source
+            or configured_path(EXPORTED_VBA_FOLDER_PATH)
+            or choose_source_folder()
+        ).expanduser().resolve()
+        configured_backup = args.backup_folder or configured_path(BACKUP_FOLDER_PATH)
+        backup_folder = configured_backup.expanduser().resolve() if configured_backup else None
+        if backup_folder is not None and not backup_folder.is_dir():
+            raise VbaImportError(f"Backup folder does not exist: {backup_folder}")
         inventory = build_source_inventory(source_folder)
         run_excel_import(
             workbook_path,
             source_folder,
             inventory,
+            backup_folder=backup_folder,
             dry_run=args.dry_run,
             assume_yes=args.yes,
         )
