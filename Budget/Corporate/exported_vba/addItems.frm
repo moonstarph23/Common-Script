@@ -1,3 +1,14 @@
+VERSION 5.00
+Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} addItems
+   OleObjectBlob   =   "addItems.frx":0000
+   Caption         =   "Add New Items"
+   ClientHeight    =   8280.001
+   ClientLeft      =   120
+   ClientTop       =   465
+   ClientWidth     =   9960.001
+   StartUpPosition =   1  'CenterOwner
+   TypeInfoVer     =   92
+End
 Attribute VB_Name = "addItems"
 Attribute VB_Base = "0{638B61A1-A5AF-4068-BFE0-DF9678D6D6EA}{9A84F3B9-D665-49C1-A631-DE1CE7574FE9}"
 Attribute VB_GlobalNameSpace = False

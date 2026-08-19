@@ -1,3 +1,14 @@
+VERSION 5.00
+Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} tableContents
+   OleObjectBlob   =   "tableContents.frx":0000
+   Caption         =   "Table of Contents"
+   ClientHeight    =   8280.001
+   ClientLeft      =   120
+   ClientTop       =   465
+   ClientWidth     =   9765.001
+   StartUpPosition =   1  'CenterOwner
+   TypeInfoVer     =   90
+End
 Attribute VB_Name = "tableContents"
 Attribute VB_Base = "0{A953872C-971B-4E1C-9166-0C75CA6B7C9E}{3B07DE12-43F9-4A98-9838-C9469528E26B}"
 Attribute VB_GlobalNameSpace = False

@@ -1,3 +1,14 @@
+VERSION 5.00
+Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} frmWait
+   OleObjectBlob   =   "frmWait.frx":0000
+   Caption         =   "Please wait..."
+   ClientHeight    =   840
+   ClientLeft      =   120
+   ClientTop       =   465
+   ClientWidth     =   4560
+   StartUpPosition =   1  'CenterOwner
+   TypeInfoVer     =   3
+End
 Attribute VB_Name = "frmWait"
 Attribute VB_Base = "0{0AB373C4-CF2A-4541-9A84-6FF8CD54FDD6}{33FB2522-B2C4-44CB-AF39-5A1A86ECD5F3}"
 Attribute VB_GlobalNameSpace = False

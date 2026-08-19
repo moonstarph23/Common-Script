@@ -1,3 +1,14 @@
+VERSION 5.00
+Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} Progress_Bar
+   OleObjectBlob   =   "Progress_Bar.frx":0000
+   Caption         =   "Please wait..."
+   ClientHeight    =   840
+   ClientLeft      =   120
+   ClientTop       =   450
+   ClientWidth     =   4560
+   StartUpPosition =   1  'CenterOwner
+   TypeInfoVer     =   8
+End
 Attribute VB_Name = "Progress_Bar"
 Attribute VB_Base = "0{2AC7468E-8C3A-4825-8F82-49BBD42B80D0}{D15445D4-A67D-404D-9984-378E71D3584F}"
 Attribute VB_GlobalNameSpace = False

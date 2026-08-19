@@ -1,3 +1,14 @@
+VERSION 5.00
+Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} viewPL
+   OleObjectBlob   =   "viewPL.frx":0000
+   Caption         =   "View P&L"
+   ClientHeight    =   8280.001
+   ClientLeft      =   120
+   ClientTop       =   465
+   ClientWidth     =   13440
+   StartUpPosition =   1  'CenterOwner
+   TypeInfoVer     =   85
+End
 Attribute VB_Name = "viewPL"
 Attribute VB_Base = "0{32A7A118-BB44-4FC7-B750-91894A613763}{C6F28CC8-A6F1-4FDB-B02A-8F2C8C220AEF}"
 Attribute VB_GlobalNameSpace = False

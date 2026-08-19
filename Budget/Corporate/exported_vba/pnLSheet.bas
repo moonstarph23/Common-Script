@@ -780,7 +780,7 @@ Public Sub exportPnLs(Optional filterCriteria As Variant = "By Department", Opti
 
     ' Try to unprotect sheet with password before clearing AutoFilter
     On Error Resume Next
-    globalMasterSheet.Unprotect "Budget"
+    globalMasterSheet.Unprotect "<REDACTED>"
     On Error GoTo 0
 
     ' Safely clear any AutoFilter state
@@ -4780,7 +4780,7 @@ Private Sub LockSummarySheets(targetWorkbook As Workbook)
 
             ' Unprotect sheet first (in case it's already protected)
             On Error Resume Next
-            ws.Unprotect "Budget"
+            ws.Unprotect "<REDACTED>"
             On Error GoTo 0
 
             ' Lock all cells in the sheet
@@ -4789,7 +4789,7 @@ Private Sub LockSummarySheets(targetWorkbook As Workbook)
 
             ' Protect the sheet with password
             On Error Resume Next
-            ws.Protect "Budget", DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+            ws.Protect "<REDACTED>", DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                       AllowFormattingCells:=True, AllowFormattingColumns:=False, _
                       AllowFormattingRows:=False, AllowInsertingColumns:=False, _
                       AllowInsertingRows:=False, AllowInsertingHyperlinks:=False, _
@@ -4842,7 +4842,7 @@ Public Function UnlockAllSheets() As Boolean
         Exit Function
     End If
     
-    If inputPassword <> "Budget" Then
+    If inputPassword <> "<REDACTED>" Then
         Debug.Print "Incorrect password entered - aborting unlock operation"
         MsgBox "Incorrect password. Unlock operation cancelled.", vbCritical, "Authentication Failed"
         UnlockAllSheets = False
@@ -5053,12 +5053,12 @@ Private Sub LockIndividualPLSheets(targetWorkbook As Workbook)
 
             ' Unprotect sheet first (in case it's already protected)
             On Error Resume Next
-            ws.Unprotect "Budget"
+            ws.Unprotect "<REDACTED>"
             On Error GoTo 0
 
             ' Protect the sheet with password (do not modify cell lock properties)
             On Error Resume Next
-            ws.Protect "Budget", DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+            ws.Protect "<REDACTED>", DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                       AllowFormattingCells:=True, AllowFormattingColumns:=False, _
                       AllowFormattingRows:=False, AllowInsertingColumns:=False, _
                       AllowInsertingRows:=False, AllowInsertingHyperlinks:=False, _
@@ -5233,7 +5233,7 @@ Public Sub FilterSheetsNewWorkbook()
     
     ' Unprotect the active sheet with password
     On Error Resume Next
-    ThisWorkbook.activeSheet.Unprotect "Budget"
+    ThisWorkbook.activeSheet.Unprotect "<REDACTED>"
     On Error GoTo 0
     
     ' Apply filter to show only "SHOW" criteria
@@ -5242,7 +5242,7 @@ Public Sub FilterSheetsNewWorkbook()
     
     ' Protect the sheet again with password
     On Error Resume Next
-    ThisWorkbook.activeSheet.Protect "Budget", DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+    ThisWorkbook.activeSheet.Protect "<REDACTED>", DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                   AllowFormattingCells:=False, AllowFormattingColumns:=False, _
                   AllowFormattingRows:=False, AllowInsertingColumns:=False, _
                   AllowInsertingRows:=False, AllowInsertingHyperlinks:=False, _
@@ -5256,7 +5256,7 @@ Sub UnfilterActiveSheetNewWorkbook()
 
     ' Unprotect the active sheet with password
     On Error Resume Next
-    ThisWorkbook.activeSheet.Unprotect "Budget"
+    ThisWorkbook.activeSheet.Unprotect "<REDACTED>"
     On Error GoTo 0
     
     ' Remove filters if they exist
@@ -5268,7 +5268,7 @@ Sub UnfilterActiveSheetNewWorkbook()
     
     ' Protect the sheet again with password
     On Error Resume Next
-    ThisWorkbook.activeSheet.Protect "Budget", DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+    ThisWorkbook.activeSheet.Protect "<REDACTED>", DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                   AllowFormattingCells:=False, AllowFormattingColumns:=False, _
                   AllowFormattingRows:=False, AllowInsertingColumns:=False, _
                   AllowInsertingRows:=False, AllowInsertingHyperlinks:=False, _

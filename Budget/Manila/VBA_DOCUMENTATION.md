@@ -8,7 +8,7 @@ Mermaid-compatible Markdown viewers render the flowcharts below.
 
 ## System Overview
 
-The source project originally contained 47 VBA components: 8 standard modules, 34 workbook/worksheet class modules, and 5 UserForms. The retained `.bas` and `.frm` exports contain 123 procedures and 119 direct internal call relationships.
+The source project originally contained 47 VBA components: 8 standard modules, 34 workbook/worksheet class modules, and 5 UserForms. The manual-import export retains the 8 standard modules, the executable `ThisWorkbook` document module, and all 5 UserForms with their binary companions. These components contain 125 procedures and 119 direct internal call relationships. The 33 empty worksheet modules are omitted.
 
 ```mermaid
 flowchart LR
@@ -145,6 +145,7 @@ flowchart TD
 | `ImportCode.bas` | Standard module | 1 |
 | `pnLSheet.bas` | Standard module | 38 |
 | `viewPL.frm` | UserForm | 9 |
+| `ThisWorkbook.cls` | Workbook document module | 2 |
 
 ## Procedure Inventory
 
@@ -273,6 +274,8 @@ flowchart TD
 | `viewPL.frm` | `FillSubChildNodes` | Sub | Public | Callable routine |
 | `viewPL.frm` | `FillSubSubChildNodes` | Sub | Public | Callable routine |
 | `viewPL.frm` | `FillSubSubSubChildNodes` | Sub | Public | Callable routine |
+| `ThisWorkbook.cls` | `Workbook_Open` | Sub | Private | Workbook event handler |
+| `ThisWorkbook.cls` | `RegisterOCX` | Sub | Public | Common Controls registration helper |
 
 ## Direct Call Relationships
 
@@ -474,11 +477,18 @@ Event and helper procedures: `updateButton_Click`, `exitButton_Click`, `TreeView
 
 ## VBA References
 
-| Reference |
-|---|
+| Reference | Requirement |
+|---|---|
+| OLE Automation | Standard Office automation types |
+| Microsoft Office 16.0 Object Library | Office application types |
+| Microsoft Forms 2.0 Object Library | UserForm controls |
+| Microsoft XML, v6.0 | XML processing |
+| Microsoft Windows Common Controls 6.0 (SP6) | `TreeView` and related ActiveX controls from `MSCOMCTL.OCX` |
 
 ## Export Notes
 
-- `.bas` files contain standard-module code.
-- `.frm` files contain each UserForm's VBA code-behind and an identifying form declaration.
-- Workbook/worksheet `.cls` modules and native `.bin` streams are intentionally omitted from `exported_vba`.
+- Import each `.bas` standard module separately through the VBA editor.
+- Keep every `.frm` beside its same-name `.frx`. Import the `.frm`; the VBA editor reads the `.frx` automatically. Do not import the `.frx` directly.
+- `ThisWorkbook.cls` contains workbook startup code. Copy its code into the destination workbook's existing `ThisWorkbook` object; importing it as a normal class will not bind the workbook event.
+- The 33 worksheet class modules contain no executable VBA and are intentionally omitted. No whole-project `.bin` file is required for component-by-component import.
+- `ThisWorkbook.RegisterOCX` attempts to register and reference `MSCOMCTL.OCX`. Registration may require a matching 32-bit/64-bit installation and administrator rights.
