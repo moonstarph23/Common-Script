@@ -464,13 +464,14 @@ flowchart TD
 
 Code: `exported_vba/tableContents.frm`  
 
-| Control | Caption | Type ID |
+| Control | Caption | Type ID / class |
 |---|---|---:|
 | `exitButton` |  | 17 |
 | `updateButton` |  | 17 |
 | `Label11` | Description: | 21 |
 | `Label12` | Table of Contents | 21 |
 | `Label13` |  | 21 |
+| `TreeView1` |  | `MSComctlLib.TreeView` |
 
 Event and helper procedures: `Label11_Click`, `Label12_Click`, `updateButton_Click`, `exitButton_Click`, `TreeView1_BeforeLabelEdit`, `Treeview1_NodeClick`, `UserForm_Initialize`, `FillChildNodes`, `FillSubChildNodes`
 
@@ -478,7 +479,7 @@ Event and helper procedures: `Label11_Click`, `Label12_Click`, `updateButton_Cli
 
 Code: `exported_vba/addItems.frm`  
 
-| Control | Caption | Type ID |
+| Control | Caption | Type ID / class |
 |---|---|---:|
 | `exitButton` |  | 17 |
 | `Label1` | Cost Center | 21 |
@@ -500,6 +501,7 @@ Code: `exported_vba/addItems.frm`
 | `Label16` | Type Row Number | 21 |
 | `TextBox6` |  | 23 |
 | `clearButton` |  | 17 |
+| `TreeView1` |  | `MSComctlLib.TreeView` |
 
 Event and helper procedures: `clearButton_Click`, `updateButton_Click`, `exitButton_Click`, `TreeView1_BeforeLabelEdit`, `Treeview1_NodeClick`, `UserForm_Initialize`, `FillChildNodes`, `FillSubChildNodes`, `ComboBox1_Change`
 
@@ -507,7 +509,7 @@ Event and helper procedures: `clearButton_Click`, `updateButton_Click`, `exitBut
 
 Code: `exported_vba/Progress_Bar.frm`  
 
-| Control | Caption | Type ID |
+| Control | Caption | Type ID / class |
 |---|---|---:|
 | `ProgressContainer` |  | 21 |
 | `ProgressBar` |  | 21 |
@@ -519,7 +521,7 @@ Event and helper procedures: `ProgressContainer_Click`, `StatusText_Click`, `Use
 
 Code: `exported_vba/frmWait.frm`  
 
-| Control | Caption | Type ID |
+| Control | Caption | Type ID / class |
 |---|---|---:|
 | `StatusText` | Updating Forecast... | 21 |
 
@@ -529,7 +531,7 @@ Event and helper procedures: `UserForm_Initialize`
 
 Code: `exported_vba/viewPL.frm`  
 
-| Control | Caption | Type ID |
+| Control | Caption | Type ID / class |
 |---|---|---:|
 | `exitButton` |  | 17 |
 | `Label1` | Cost Center | 21 |
@@ -544,6 +546,7 @@ Code: `exported_vba/viewPL.frm`
 | `Label12` | Select P&L: | 21 |
 | `TextBox1` |  | 23 |
 | `TextBox6` |  | 23 |
+| `TreeView1` |  | `MSComctlLib.TreeView` |
 
 Event and helper procedures: `updateButton_Click`, `exitButton_Click`, `TreeView1_BeforeLabelEdit`, `Treeview1_NodeClick`, `UserForm_Initialize`, `FillChildNodes`, `FillSubChildNodes`, `FillSubSubChildNodes`, `FillSubSubSubChildNodes`
 
