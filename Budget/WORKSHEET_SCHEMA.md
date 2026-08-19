@@ -166,8 +166,8 @@ Insert the corresponding row in both `P&L` and `P&L by Dept`, copy the surroundi
 - `Forecast` is inactive only in Manila; it is an active, required binding in Corporate.
 - Commented calls that would update the opposite FY sheet are not counted as effects of the containing procedure.
 - Unqualified `Range(...)`, `Cells(...)`, and `ActiveSheet` expressions depend on Excel runtime focus. They are attributed to a dynamic family where the caller makes that family clear; otherwise this document does not invent a fixed tab.
-- Workbook and worksheet class exports are intentionally omitted. The retained sources do not reliably map every VBA codename to a visible tab name without the source workbook.
+- Empty worksheet class exports are intentionally omitted. `ThisWorkbook.cls` is retained for startup code, but the exported sources still do not reliably map every VBA worksheet codename to a visible tab name without the source workbook.
 
 ## Static-analysis coverage
 
-The inventory includes active literal `Sheets(...)`/`Worksheets(...)` references, global worksheet bindings, array-based sheet lists, worksheet-name comparisons, workbook-wide loops, `ActiveSheet`, and worksheet parameters. Workbook/worksheet class exports and native form streams are intentionally omitted; the retained `.bas` and `.frm` sources contain the worksheet interactions analyzed here. Runtime calls, formulas, named ranges, control bindings, and links embedded only in the absent workbook may add dependencies that cannot be observed from these exports.
+The inventory includes active literal `Sheets(...)`/`Worksheets(...)` references, global worksheet bindings, array-based sheet lists, worksheet-name comparisons, workbook-wide loops, `ActiveSheet`, and worksheet parameters. It analyzes the retained `.bas`, `.frm`, and executable document-class text; native `.frx` designer streams are included for import but are not treated as worksheet-interaction source. Runtime calls, formulas, named ranges, control bindings, and links embedded only in the absent workbook may add dependencies that cannot be observed from these exports.
