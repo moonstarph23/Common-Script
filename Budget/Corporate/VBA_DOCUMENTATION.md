@@ -231,7 +231,7 @@ flowchart TD
 | `pnLSheet.bas` | `ValidatePnLTargetRows` | Function | Private | Pre-clear FY-to-P&L mapping validation |
 | `pnLSheet.bas` | `ClearPNL` | Sub | Public | Callable routine |
 | `pnLSheet.bas` | `ClearDeptPNL` | Sub | Public | Callable routine |
-| `pnLSheet.bas` | `updatePnL` | Sub | Public | Callable routine |
+| `pnLSheet.bas` | `updatePnL` | Sub | Public | Clears the active filter before measuring and validating the complete P&L layout |
 | `pnLSheet.bas` | `BulkWriteGtoR` | Sub | Private | Callable routine |
 | `pnLSheet.bas` | `BulkWriteWtoAH` | Sub | Private | Callable routine |
 | `pnLSheet.bas` | `BulkWriteAVtoBH` | Sub | Private | Callable routine |

@@ -204,6 +204,16 @@ Sub updatePnL(deptCol As Long)
     Call declareGlobal
     Set wsTarget = ThisWorkbook.activeSheet
 
+    ' Remove the active filter before measuring the complete P&L layout.
+    ' FilterSheets reapplies the standard SHOW filter after the refresh.
+    On Error Resume Next
+    If wsTarget.AutoFilterMode Then
+        If wsTarget.FilterMode Then
+            wsTarget.ShowAllData
+        End If
+    End If
+    On Error GoTo 0
+
     department = CStr(wsTarget.Range("I1").value)
     pnlLastRow = GetLastUsedRow(wsTarget, 8)
     budgetLastRow = GetLastDataRow(globalBudgetFYSheet, "F", 12)
@@ -220,17 +230,7 @@ Sub updatePnL(deptCol As Long)
                                  wsTarget, pnlLastRow, validationError) Then GoTo ValidationFailed
     If Not ValidatePnLTargetRows(arrActual, globalActualFYSheet.Name, deptCol, department, _
                                  wsTarget, pnlLastRow, validationError) Then GoTo ValidationFailed
-    
-    ' Safely clear any AutoFilter state
-    On Error Resume Next
-    If wsTarget.AutoFilterMode Then
-        If wsTarget.FilterMode Then
-            wsTarget.ShowAllData
-        End If
-    End If
-    On Error GoTo 0
-    
-    
+
     Call ClearPNL
     lastRow = pnlLastRow
 
