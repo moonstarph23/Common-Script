@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import shutil
 import sys
 from dataclasses import dataclass
 from datetime import datetime
@@ -25,6 +26,7 @@ from typing import Any, Sequence
 TARGET_WORKBOOK_PATH = r""
 EXPORTED_VBA_FOLDER_PATH = r""
 BACKUP_FOLDER_PATH = r""
+SCRIPT_FOLDER = Path(__file__).resolve().parent
 
 SUPPORTED_WORKBOOK_EXTENSIONS = {".xlsm", ".xlsb", ".xlam", ".xltm"}
 
@@ -230,6 +232,57 @@ def next_backup_path(
     return candidate
 
 
+def next_import_log_path(
+    source_log: Path,
+    destination_folder: Path = SCRIPT_FOLDER,
+    now: datetime | None = None,
+) -> Path:
+    timestamp = (now or datetime.now()).strftime("%Y%m%d_%H%M%S")
+    candidate = destination_folder / f"{source_log.stem}_{timestamp}.log"
+    counter = 2
+    while candidate.exists():
+        candidate = destination_folder / f"{source_log.stem}_{timestamp}_{counter}.log"
+        counter += 1
+    return candidate
+
+
+def relocate_excel_import_logs(
+    source_folder: Path,
+    *,
+    destination_folder: Path = SCRIPT_FOLDER,
+    strict: bool,
+) -> tuple[Path, ...]:
+    moved = []
+    try:
+        logs = sorted(
+            (
+                path
+                for path in source_folder.iterdir()
+                if path.is_file() and path.suffix.casefold() == ".log"
+            ),
+            key=lambda path: path.name.casefold(),
+        )
+    except Exception as exc:
+        message = f"Unable to inspect Excel import logs in {source_folder}: {exc}"
+        if strict:
+            raise VbaImportError(message) from exc
+        print(f"WARNING: {message}", file=sys.stderr)
+        return ()
+    for source_log in logs:
+        destination = next_import_log_path(source_log, destination_folder)
+        try:
+            shutil.move(str(source_log), str(destination))
+        except Exception as exc:
+            message = f"Unable to move Excel import log {source_log} to {destination}: {exc}"
+            if strict:
+                raise VbaImportError(message) from exc
+            print(f"WARNING: {message}", file=sys.stderr)
+            continue
+        moved.append(destination)
+        print(f"Excel import log: {destination}")
+    return tuple(moved)
+
+
 def choose_workbook() -> Path:
     try:
         from tkinter import Tk, filedialog
@@ -423,6 +476,45 @@ def verify_final_components(vb_project: Any, plan: ReplacementPlan) -> None:
         )
 
 
+def create_excel_application(win32com_client: Any) -> Any:
+    excel = win32com_client.DispatchEx("Excel.Application")
+    excel.Visible = False
+    excel.DisplayAlerts = False
+    excel.EnableEvents = False
+    excel.ScreenUpdating = False
+    excel.AutomationSecurity = MSO_AUTOMATION_SECURITY_FORCE_DISABLE
+    return excel
+
+
+def open_target_workbook(excel: Any, workbook_path: Path, *, read_only: bool) -> Any:
+    workbook = excel.Workbooks.Open(
+        Filename=str(workbook_path),
+        UpdateLinks=0,
+        ReadOnly=read_only,
+        IgnoreReadOnlyRecommended=True,
+        AddToMru=False,
+    )
+    if not read_only and bool(workbook.ReadOnly):
+        raise VbaImportError(
+            "Excel opened the workbook read-only. Close it in other Excel sessions and retry."
+        )
+    return workbook
+
+
+def accessible_vb_project(workbook: Any) -> Any:
+    try:
+        vb_project = workbook.VBProject
+        _ = vb_project.VBComponents.Count
+    except Exception as exc:
+        raise VbaImportError(
+            "Excel denied VBA project access. Enable 'Trust access to the VBA project "
+            "object model' in Trust Center and ensure the workbook has a VBA project."
+        ) from exc
+    if int(vb_project.Protection) == VBEXT_PP_LOCKED:
+        raise VbaImportError("The workbook VBA project is locked; unlock it before importing")
+    return vb_project
+
+
 def run_excel_import(
     workbook_path: Path,
     source_folder: Path,
@@ -445,39 +537,15 @@ def run_excel_import(
     pythoncom.CoInitialize()
     excel = None
     workbook = None
+    vb_project = None
     backup_path: Path | None = None
     mutation_started = False
+    removal_saved = False
     saved_successfully = False
     try:
-        excel = win32com.client.DispatchEx("Excel.Application")
-        excel.Visible = False
-        excel.DisplayAlerts = False
-        excel.EnableEvents = False
-        excel.ScreenUpdating = False
-        excel.AutomationSecurity = MSO_AUTOMATION_SECURITY_FORCE_DISABLE
-
-        workbook = excel.Workbooks.Open(
-            Filename=str(workbook_path),
-            UpdateLinks=0,
-            ReadOnly=dry_run,
-            IgnoreReadOnlyRecommended=True,
-            AddToMru=False,
-        )
-        if not dry_run and bool(workbook.ReadOnly):
-            raise VbaImportError(
-                "Excel opened the workbook read-only. Close it in other Excel sessions and retry."
-            )
-
-        try:
-            vb_project = workbook.VBProject
-            _ = vb_project.VBComponents.Count
-        except Exception as exc:
-            raise VbaImportError(
-                "Excel denied VBA project access. Enable 'Trust access to the VBA project "
-                "object model' in Trust Center and ensure the workbook has a VBA project."
-            ) from exc
-        if int(vb_project.Protection) == VBEXT_PP_LOCKED:
-            raise VbaImportError("The workbook VBA project is locked; unlock it before importing")
+        excel = create_excel_application(win32com.client)
+        workbook = open_target_workbook(excel, workbook_path, read_only=dry_run)
+        vb_project = accessible_vb_project(workbook)
 
         plan = make_replacement_plan(vb_project, inventory)
         print_plan(workbook_path, source_folder, backup_folder, plan)
@@ -491,8 +559,39 @@ def run_excel_import(
         workbook.SaveCopyAs(str(backup_path))
         print(f"Backup created:  {backup_path}")
 
+        # Preserve diagnostics from any earlier run and keep exported_vba
+        # limited to importable components before Excel can create a new log.
+        relocate_excel_import_logs(source_folder, strict=True)
+
         mutation_started = True
         removed_count = remove_replaceable_components(vb_project)
+        workbook.Save()
+        removal_saved = True
+
+        # Closing the stripped workbook and its Excel process clears VBA's
+        # component-name/designer cache before the replacement import begins.
+        vb_project = None
+        workbook.Close(SaveChanges=False)
+        workbook = None
+        excel.Quit()
+        excel = None
+        print("Old components removed and saved. Reopening in a new Excel session...")
+
+        excel = create_excel_application(win32com.client)
+        workbook = open_target_workbook(excel, workbook_path, read_only=False)
+        vb_project = accessible_vb_project(workbook)
+        remaining = [
+            str(component.Name)
+            for component in vb_components(vb_project)
+            if int(component.Type)
+            in (VBEXT_CT_STD_MODULE, VBEXT_CT_CLASS_MODULE, VBEXT_CT_MS_FORM)
+        ]
+        if remaining:
+            raise VbaImportError(
+                "Removed components reappeared after reopening the workbook: "
+                + ", ".join(sorted(remaining, key=str.casefold))
+            )
+
         for component in plan.standard_modules:
             import_component(vb_project, component)
         for component in plan.ordinary_classes:
@@ -513,9 +612,15 @@ def run_excel_import(
     except VbaImportError:
         raise
     except Exception as exc:
-        state = " after component removal began" if mutation_started else ""
+        if removal_saved:
+            state = " during the fresh-session import"
+        elif mutation_started:
+            state = " after component removal began"
+        else:
+            state = ""
         raise VbaImportError(f"Excel VBA import failed{state}: {exc}") from exc
     finally:
+        vb_project = None
         if workbook is not None:
             try:
                 workbook.Close(SaveChanges=False)
@@ -526,13 +631,23 @@ def run_excel_import(
                 excel.Quit()
             except Exception:
                 pass
+        if backup_path is not None:
+            relocate_excel_import_logs(source_folder, strict=False)
         pythoncom.CoUninitialize()
         if mutation_started and not saved_successfully and backup_path is not None:
-            print(
-                "Import failed before the rebuilt project was saved. The workbook was closed "
-                f"without saving partial changes. Backup: {backup_path}",
-                file=sys.stderr,
-            )
+            if removal_saved:
+                print(
+                    "Import failed after the stripped workbook was saved. The target remains "
+                    "without its old removable components; restore the original project from "
+                    f"this backup if needed: {backup_path}",
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    "Import failed before the removal phase was saved. The workbook was closed "
+                    f"without saving partial changes. Backup: {backup_path}",
+                    file=sys.stderr,
+                )
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:

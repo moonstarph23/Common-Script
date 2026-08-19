@@ -55,11 +55,15 @@ If either path is omitted, the script opens a Windows selection dialog. Before c
 2. Opens Excel with events, alerts, external-link updates, and automatic macro execution disabled.
 3. Saves the current workbook and creates a timestamped backup beside it, such as `Budget_backup_20260819_143000.xlsm`.
 4. Deletes every removable standard module, ordinary class module, and UserForm from the target project. Excel's built-in `ThisWorkbook` and worksheet document objects are never deleted.
-5. Imports each `.bas`, ordinary `.cls`, and `.frm`. Keep each `.frm` beside its same-name `.frx`; the VBA editor loads the `.frx` automatically.
-6. For a document export such as `ThisWorkbook.cls`, clears the matching existing document object's code and inserts the exported source without its file-only attributes.
-7. Verifies the final removable component set and saves the workbook only after the complete import succeeds.
+5. Saves the stripped workbook, closes it, and quits that Excel process so VBA releases cached component names and form designers.
+6. Starts a new Excel process, reopens the stripped workbook, and verifies that the removed components did not reappear.
+7. Imports each `.bas`, ordinary `.cls`, and `.frm`. Keep each `.frm` beside its same-name `.frx`; the VBA editor loads the `.frx` automatically.
+8. For a document export such as `ThisWorkbook.cls`, clears the matching existing document object's code and inserts the exported source without its file-only attributes.
+9. Verifies the final removable component set and saves the completed workbook.
 
-If replacement fails after deletion begins, the script closes the workbook without saving the partial project. The pre-import workbook save and timestamped backup remain available. It does not automatically overwrite the target with the backup.
+If deletion fails before the stripped workbook is saved, the script closes it without saving the partial removal. If the later fresh-session import fails, the target remains in its intentionally saved stripped state and the timestamped backup retains the original project. The script does not automatically overwrite the target with that backup.
+
+When Excel creates a form-import diagnostic such as `addItems.log`, the importer moves it out of `exported_vba` and places it beside `import_exported_vba.py`. Logs receive timestamps, for example `addItems_20260819_105543.log`, so a later run does not overwrite an earlier diagnostic. Existing logs in the source folder are moved before replacement begins, and a newly generated log is moved after Excel closes.
 
 ## Manual fallback
 
