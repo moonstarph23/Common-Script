@@ -55,6 +55,8 @@ Dim iCtr As Integer
 Dim NewBFound As Boolean
 Dim NewStatus As String
 
+    On Error GoTo ShiftLoadError
+
     For i = 1 To lvDate.ListItems.Count
         If lvDate.ListItems(i).Text = cmbDate.Text Then
             NewColumnS = lvDate.ListItems(i).SubItems(1)
@@ -64,16 +66,28 @@ Dim NewStatus As String
     Next i
 
     lvListofAvailableShift.ListItems.Clear
-    
+
+    If NewColumnS < 1 Then Exit Sub
+
     If NewCycleS = "First Cycle" Then
+        If NewColumnS >= lvFirstCycle.ColumnHeaders.Count Then Exit Sub
         Call LookForRecordFirstForShifting
     ElseIf NewCycleS = "Second Cycle" Then
+        If NewColumnS >= lvSecondCycle.ColumnHeaders.Count Then Exit Sub
         Call LookForRecordSecondForShifting
+    Else
+        Exit Sub
     End If
 
     For j = 1 To lvListofAvailableShift.ListItems.Count
         lvListofAvailableShift.ListItems(j).Checked = True
     Next j
+    Exit Sub
+
+ShiftLoadError:
+    lvListofAvailableShift.ListItems.Clear
+    MsgBox "Available shifts could not be loaded for the selected date: " & _
+        Err.Description, vbExclamation, "RFA Shift Selection"
 End Sub
 
 Private Sub cmdClose_Click()
@@ -1065,7 +1079,7 @@ Dim NewStatus As String
                 NewShiftTo = "0500"
             End If
             
-        For i = 1 To lvFirstCycle.ListItems.Count
+        For i = 1 To lvSecondCycle.ListItems.Count
             NewStatus = Mid(lvSecondCycle.ListItems(i).SubItems(NewColumnS), 1, 4)
             If IsNumeric(NewStatus) Then
                 If cmbPosition.Text = "All" Then
@@ -1093,7 +1107,7 @@ Dim NewStatus As String
                     End If
                 
                     If IsNumeric(NewStatus) Then
-                        If lvFirstCycle.ListItems(i).SubItems(1) = NewPosition Then
+                        If lvSecondCycle.ListItems(i).SubItems(1) = NewPosition Then
                             If NewStatus > NewShiftFrom And NewStatus < NewShiftTo Then
                                 NewBFound = False
                                 For iCtr = 1 To lvListofAvailableShift.ListItems.Count
@@ -1117,9 +1131,7 @@ Dim NewStatus As String
         Next j
     Else
         
-        For i = 1 To lvFirstCycle.ListItems.Count
-            If i > lvSecondCycle.ListItems.Count Then
-            Else
+        For i = 1 To lvSecondCycle.ListItems.Count
                 NewStatus = Mid(lvSecondCycle.ListItems(i).SubItems(NewColumnS), 1, 4)
                 If IsNumeric(NewStatus) Then
                     If cmbPosition.Text = "All" Then
@@ -1148,7 +1160,7 @@ Dim NewStatus As String
                         End If
                     
                         If IsNumeric(NewStatus) Then
-                            If lvFirstCycle.ListItems(i).SubItems(1) = NewPosition Then
+                            If lvSecondCycle.ListItems(i).SubItems(1) = NewPosition Then
                                 If NewStatus > NewShiftFrom And NewStatus < NewShiftTo Then
                                     NewBFound = False
                                     For iCtr = 1 To lvListofAvailableShift.ListItems.Count
@@ -1167,7 +1179,6 @@ Dim NewStatus As String
                     
                     End If
                 End If
-            End If
         Next i
     End If
     

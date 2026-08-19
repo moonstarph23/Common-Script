@@ -96,6 +96,8 @@ Changing any selector stops the inactivity timer, recalculates available shifts 
 
 The form uses numeric four-digit values as working shift start times. Non-numeric values are treated as roster status codes. The code distinguishes absence-type values from rest, leave, and other non-working statuses when deciding which employees and historical remarks to include.
 
+Available-shift discovery always uses the selected cycle's own row count, role column, and validated date-column index. This allows `All Shift` to work when the First and Second Cycle rosters contain different numbers of employees without raising ListView index-out-of-bounds error 35600.
+
 ## Employee Review
 
 `lvListTrainee_Click` and `LoadData` display the selected employee's ID, name, position, and 28-day roster values. `LoadColor` highlights the date associated with the selected result.
