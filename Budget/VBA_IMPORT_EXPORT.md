@@ -34,7 +34,7 @@ Do not place these files in `exported_vba`:
 - Empty worksheet `.cls` files.
 - Workbooks or temporary Office files.
 
-Every component name must be unique, and each `.bas`, `.cls`, or `.frm` basename must match its `Attribute VB_Name` value. The importer rejects duplicates, mismatched names, orphan `.frx` files, missing form companions, invalid FRX file signatures, and tracked text containing `<REDACTED>`.
+Every component name must be unique, and each `.bas`, `.cls`, or `.frm` basename must match its `Attribute VB_Name` value. The importer rejects duplicates, mismatched names, orphan `.frx` files, missing form companions, invalid FRX record headers or payload lengths, invalid form bounds, missing OLE compound signatures, and tracked text containing `<REDACTED>`.
 
 ## Recommended export method: Excel VBA editor
 
@@ -72,6 +72,8 @@ Attribute VB_Name = "addItems"
 ```
 
 Never rename only one member of a form pair, import the `.frx` directly, replace the `.frx` with raw `CompObj`/`f`/`o` streams, or construct a partial code-only `.frm`. Those approaches can produce `Property OleObjectBlob ... could not be set` during import.
+
+A native VBE-exported `.frx` starts with a 24-byte `OleObjectBlob` record wrapper before the OLE compound file. That wrapper must identify an OLE storage record, declare the exact byte length of the compound payload, and contain valid form bounds. Copying a wrapper from another form or placing a bare compound file in the folder is not valid, even when an OLE reader can open the inner streams.
 
 If Excel is unavailable, a UserForm export must still reproduce Excel's native format: build the `.frm` from the embedded `VBFrame` descriptor and VBA source, and build a valid FRX compound file containing the remaining designer storage. The CFB directory tree, CLSID, allocation tables, stream names, and all designer-stream bytes must remain valid. Prefer native Excel export because a binary that merely opens in a tolerant OLE reader can still be rejected by Excel.
 

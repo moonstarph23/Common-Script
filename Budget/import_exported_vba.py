@@ -37,6 +37,10 @@ VBEXT_CT_DOCUMENT = 100
 VBEXT_PP_LOCKED = 1
 MSO_AUTOMATION_SECURITY_FORCE_DISABLE = 3
 
+FRX_PREFIX_SIZE = 24
+FRX_RECORD_TYPE_OLE_STORAGE = 8
+OLE_COMPOUND_SIGNATURE = bytes.fromhex("d0cf11e0a1b11ae1")
+
 VB_NAME_RE = re.compile(
     r'^\s*Attribute\s+VB_Name\s*=\s*"([^"]+)"\s*$', re.IGNORECASE | re.MULTILINE
 )
@@ -144,6 +148,40 @@ def _files_by_suffix(folder: Path, suffix: str) -> list[Path]:
     )
 
 
+def validate_frx_binary(path: Path) -> None:
+    """Validate the native VBE wrapper around a UserForm compound file."""
+    data = path.read_bytes()
+    if len(data) < FRX_PREFIX_SIZE + len(OLE_COMPOUND_SIGNATURE):
+        raise VbaImportError(f"FRX companion is too short: {path.name}")
+    if data[:2] != b"LB":
+        raise VbaImportError(f"FRX companion has an invalid record signature: {path.name}")
+
+    record_type = int.from_bytes(data[2:4], "little")
+    if record_type != FRX_RECORD_TYPE_OLE_STORAGE:
+        raise VbaImportError(
+            f"FRX companion has record type {record_type}, expected "
+            f"{FRX_RECORD_TYPE_OLE_STORAGE}: {path.name}"
+        )
+
+    declared_length = int.from_bytes(data[4:8], "little")
+    actual_length = len(data) - FRX_PREFIX_SIZE
+    if declared_length != actual_length:
+        raise VbaImportError(
+            f"FRX companion declares a {declared_length}-byte OLE payload but contains "
+            f"{actual_length} bytes: {path.name}"
+        )
+
+    left = int.from_bytes(data[8:12], "little", signed=True)
+    top = int.from_bytes(data[12:16], "little", signed=True)
+    right = int.from_bytes(data[16:20], "little", signed=True)
+    bottom = int.from_bytes(data[20:24], "little", signed=True)
+    if right <= left or bottom <= top:
+        raise VbaImportError(f"FRX companion has invalid form bounds: {path.name}")
+
+    if data[FRX_PREFIX_SIZE : FRX_PREFIX_SIZE + 8] != OLE_COMPOUND_SIGNATURE:
+        raise VbaImportError(f"FRX companion has no OLE compound payload: {path.name}")
+
+
 def build_source_inventory(folder: Path) -> SourceInventory:
     if not folder.is_dir():
         raise VbaImportError(f"Source folder does not exist: {folder}")
@@ -191,13 +229,7 @@ def build_source_inventory(folder: Path) -> SourceInventory:
         frx = frx_by_stem.get(form.path.stem.casefold())
         if frx is None:
             raise VbaImportError(f"Missing FRX companion for form: {form.path.name}")
-        frx_data = frx.read_bytes()
-        if (
-            len(frx_data) < 32
-            or frx_data[:2] != b"LB"
-            or frx_data[24:32] != bytes.fromhex("d0cf11e0a1b11ae1")
-        ):
-            raise VbaImportError(f"FRX companion is not a valid UserForm binary: {frx.name}")
+        validate_frx_binary(frx)
         blob_match = OLE_OBJECT_BLOB_RE.search(read_vba_text(form.path))
         if not blob_match or blob_match.group(1).casefold() != frx.name.casefold():
             raise VbaImportError(

@@ -561,6 +561,7 @@ Event and helper procedures: `updateButton_Click`, `exitButton_Click`, `TreeView
 
 - Import each `.bas` standard module separately through the VBA editor.
 - Keep every `.frm` beside its same-name `.frx`. Import the `.frm`; the VBA editor reads the `.frx` automatically. Do not import the `.frx` directly.
+- Each included `.frx` has its own native 24-byte `OleObjectBlob` wrapper; its declared length matches that form's OLE compound payload. Do not reuse an FRX wrapper from another form.
 - The [VBA import and export guide](../VBA_IMPORT_EXPORT.md) explains the supported component files and Windows Python importer. The importer replaces `ThisWorkbook.cls` code inside the destination workbook's existing `ThisWorkbook` object. For manual migration, copy its executable code into that object; importing it as a normal class will not bind the workbook event.
 - The 44 worksheet class modules contain no executable VBA and are intentionally omitted. No whole-project `.bin` file is required for component-by-component import.
 - The Corporate sheet-protection credential is stored as `<REDACTED>` in `pnLSheet.bas`. Replace the placeholder locally with the correct value before running routines that protect, unprotect, or authorize workbook changes.
